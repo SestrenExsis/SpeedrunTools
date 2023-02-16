@@ -12,12 +12,11 @@ class SpeedrunVideoPreprocessor:
             source_file: str
             ):
         self.source_video = cv2.VideoCapture(source_file)
+        self.next_frame()
 
-    def get_next_raw_frame_data(self):
-        time_in_ms: int = int(self.source_video.get(cv2.CAP_PROP_POS_MSEC))
-        read_ind, current_image = self.source_video.read()
-        result = (read_ind, time_in_ms, current_image)
-        return result
+    def next_frame(self):
+        self.time_in_ms = int(self.source_video.get(cv2.CAP_PROP_POS_MSEC))
+        self.read_ind, self.current_image = self.source_video.read()
 
     def crop_and_resize_image(self,
             source_image,
@@ -36,9 +35,9 @@ class SpeedrunVideoPreprocessor:
             source_bbox: tuple, # (left: int, top: int, right: int, bottom: int)
             target_size: tuple, # (width: int, height: int)
             ):
-        EPSILON_IN_MS: int = 15
         MS_PER_S: int = 1000
         TARGET_FRAMERATE: float = 60.0
+        EPSILON_IN_MS: int = MS_PER_S // TARGET_FRAMERATE
         codec = cv2.VideoWriter_fourcc(*'mp4v')
         target_video = cv2.VideoWriter(
             target_file,
@@ -47,22 +46,32 @@ class SpeedrunVideoPreprocessor:
             target_size,
             True,
             )
-        start_time_in_ms = MS_PER_S * time_range[0] - EPSILON_IN_MS
-        end_time_in_ms = MS_PER_S * time_range[1] + EPSILON_IN_MS
-        read_ind = True
-        while read_ind:
-            (read_ind, time_in_ms, raw_frame) = self.get_next_raw_frame_data()
-            if time_in_ms > end_time_in_ms:
+        start_time_in_ms: int = MS_PER_S * time_range[0] - EPSILON_IN_MS
+        end_time_in_ms: int = MS_PER_S * time_range[1] + EPSILON_IN_MS
+        while self.read_ind:
+            show_progress(self.time_in_ms, end_time_in_ms)
+            if self.time_in_ms >= start_time_in_ms:
+                processed_frame = self.crop_and_resize_image(
+                    self.current_image,
+                    source_bbox,
+                    target_size,
+                    )
+                target_video.write(processed_frame)
+            if self.time_in_ms > end_time_in_ms:
                 break
-            if time_in_ms < start_time_in_ms:
-                continue
-            processed_frame = self.crop_and_resize_image(
-                raw_frame,
-                source_bbox,
-                target_size,
-                )
-            target_video.write(processed_frame)
+            self.next_frame()
         self.source_video.release()
+    
+def show_progress(current: int, total: int):
+    # Source: https://stackoverflow.com/questions/3173320
+    LENGTH = 50
+    amount = float(float(current) / float(total))
+    filled = int(LENGTH * amount)
+    bar = '█' * filled + '-' * (LENGTH - filled)
+    percent = ("{0:.1f}").format(100 * amount)
+    print(f'\rProgress: [{bar}] {percent}% Complete', end='\r')
+    if amount >= 1.0: 
+        print()
 
 if __name__ == '__main__':
     '''
