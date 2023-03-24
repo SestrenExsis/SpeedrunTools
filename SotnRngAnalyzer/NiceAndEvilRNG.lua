@@ -65,10 +65,10 @@ function mul32(__a, __b)
     local b1 = bit.band(__b, 0xffff)
     -- Use FOIL to stay within Lua number precision bounds
     local temp = a0 * b1 + a1 * b0
-    local _lo = a1 * b1 + bit.lshift(bit.band(temp, 0xffff), 0x10)
-    local _hi = a0 * b0 + bit.rshift(temp, 0x10)
+    local lo = a1 * b1 + bit.lshift(bit.band(temp, 0xffff), 0x10)
+    local hi = a0 * b0 + bit.rshift(temp, 0x10)
     -- Output the low and high 32-bit halves of the product separately
-    local result = {hi = _hi, lo = _lo}
+    local result = {hi = hi, lo = lo}
     return result
 end
 
@@ -80,28 +80,49 @@ function hex(__number, __digits)
     return result
 end
 
--- main functions
+-- main functions and global variables
+
+local _prev_nice_index = 0
+local _prev_evil_index = 0
 
 while true do
     local x = 128
     local y = 12
     -- Clear the GUI
     gui.clearGraphics()
-    gui.pixelText(x + 20, y + 0, "seed     rng  index", 0xff999999)
+    gui.pixelText(x + 20, y + 0, "seed     rng  index    delta", 0xff999999)
     -- Show nice RNG info
     local nice_seed = mainmemory.read_u32_le(ADDRESSES.nice_seed)
     local nice_rng = bit.band(0xff, bit.rshift(nice_seed, 0x18))
+    local nice_index = seed_index(nice_seed, TUMBLERS.nice_seed)
+    local nice_delta = nice_index - _prev_nice_index
+    if nice_delta > 0 then
+        nice_delta = "+"..nice_delta
+    else
+        nice_delta = " -"
+    end
     gui.pixelText(x + 0, y + 8, "nice", 0xff00ff00)
     gui.pixelText(x + 20, y + 8, hex(nice_seed, 8))
     gui.pixelText(x + 56, y + 8, hex(nice_rng, 2))
-    gui.pixelText(x + 76, y + 8, seed_index(nice_seed, TUMBLERS.nice_seed))
+    gui.pixelText(x + 76, y + 8, nice_index)
+    gui.pixelText(x + 112, y + 8, nice_delta, 0xff9999ff)
     -- Show evil RNG info
     local evil_seed = mainmemory.read_u32_le(ADDRESSES.evil_seed)
     local evil_rng = bit.band(0x7fff, bit.rshift(evil_seed, 0x11))
+    local evil_index = seed_index(evil_seed, TUMBLERS.evil_seed)
+    local evil_delta = evil_index - _prev_evil_index
+    if evil_delta > 0 then
+        evil_delta = "+"..evil_delta
+    else
+        evil_delta = " -"
+    end
     gui.pixelText(x + 0, y + 16, "evil", 0xffff0000)
     gui.pixelText(x + 20, y + 16, hex(evil_seed, 8))
     gui.pixelText(x + 56, y + 16, hex(evil_rng, 4))
-    gui.pixelText(x + 76, y + 16, seed_index(evil_seed, TUMBLERS.evil_seed))
+    gui.pixelText(x + 76, y + 16, evil_index)
+    gui.pixelText(x + 112, y + 16, evil_delta, 0xff9999ff)
     -- Advance the frame
     emu.frameadvance()
+    _prev_nice_index = nice_index
+    _prev_evil_index = evil_index
 end
