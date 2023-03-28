@@ -98,18 +98,27 @@ class TestApp(tkinter.Frame):
             self.photo_images[run_name] = photo_image
 
     def update_and_render(self):
+        padding = {
+            'timeline_left': 40,
+            'timeline_top': 8,
+            'video_left': 40,
+            'video_top': 120,
+        }
+        x0 = padding['timeline_left'] + 24
+        y0 = padding['timeline_top']
         self.canvas.delete('all')
-        left_pad = 256 + 80
-        top_pad = 8
         # TODO: Have benchmark be width of slowest section, with -1, -3, and -9 second offsets
+        width = (1 * 1000) / self.scale # 1-second wide
         self.canvas.create_rectangle(
-            left_pad, 0,
-            left_pad + (1 * 1000) / self.scale, 8 + 52 * len(self.offsets),
+            x0,
+            y0,
+            x0 + width,
+            y0 + 52 * len(self.offsets),
             fill='#ff0000',
         )
-        x = 0
-        y0 = top_pad
-        y1 = 40
+        x0 = padding['timeline_left'] + 24
+        y0 = padding['timeline_top']
+        ht = 40 # Height of timeline bars
         for i, run_name in enumerate(self.scenes):
             run_data = self.scenes[run_name]
             x = 0
@@ -133,14 +142,16 @@ class TestApp(tkinter.Frame):
                     color = f'#{r:02x}{g:02x}{b:02x}'
                 if visible:
                     self.canvas.create_rectangle(
-                        left_pad + ((x - scrub) / self.scale), y0,
-                        left_pad + ((x + width - scrub) / self.scale), y1,
+                        x0 + ((x - scrub) / self.scale),
+                        y0,
+                        x0 + ((x + width - scrub) / self.scale),
+                        y0 + ht,
                         fill=color,
                     )
                 x = x + width
             y0 += 44
-            y1 += 44
-        offset = 0
+        x0 = padding['video_left']
+        y0 = padding['video_top']
         scene_durations = []
         for i, (run_name, feed) in enumerate(self.feeds.items()):
             scene_durations.append(
@@ -150,14 +161,15 @@ class TestApp(tkinter.Frame):
             image_frame = Image.fromarray(feed.raw_frame)
             self.photo_images[run_name].paste(image_frame)
             self.canvas.create_image(
-                0, offset,
+                x0,
+                y0,
                 anchor=tkinter.NW,
                 image=self.photo_images[run_name],
             )
             self.canvas.pack()
             self.canvas.create_text(
-                left_pad - 4,
-                8 + offset,
+                x0 + 320,
+                y0 + 8,
                 fill="white",
                 font="Consolas 12",
                 text=scene_durations[i],
@@ -165,14 +177,28 @@ class TestApp(tkinter.Frame):
             )
             if i > 0:
                 self.canvas.create_text(
-                    left_pad - 4,
-                    32 + offset,
+                    x0 + 320,
+                    y0 + 32,
                     fill="black",
                     font="Consolas 12 bold",
                     text=scene_durations[i] - scene_durations[0],
                     anchor=tkinter.NE,
                 )
-            offset += 200
+            y0 += 200
+        x0 = padding['timeline_left']
+        y0 = padding['timeline_top']
+        for offset_id in range(len(self.offsets)):
+            if any([
+                self.offset_cursor >= len(self.offsets),
+                self.offset_cursor == offset_id,
+            ]):
+                self.canvas.create_rectangle(
+                    x0,
+                    y0 + 0 + 12 + 44 * offset_id,
+                    x0 + 16,
+                    y0 + 16 + 12 + 44 * offset_id,
+                    fill='#00ffff',
+                )
         self.after(17, self.update_and_render)
     
     def z_key(self, event):
