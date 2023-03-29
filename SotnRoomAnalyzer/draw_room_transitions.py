@@ -116,16 +116,15 @@ class TestApp(tkinter.Frame):
         x0 = padding['timeline_left'] + 24
         y0 = padding['timeline_top']
         self.canvas.delete('all')
-        # TODO(sestren): Indicator bar moves along with playback
-        # TODO(sestren): Draw a separate indicator bar for each video
-        width = (1 * 1000) / self.scale # 1-second wide
         self.canvas.create_rectangle(
             x0,
             y0,
-            x0 + width,
+            x0 + (1 * 1000) / self.scale, # 1-second wide
             y0 + 52 * len(self.offsets),
             fill='#ff0000',
         )
+        # TODO(sestren): Indicator bar moves along with playback
+        # TODO(sestren): Draw a separate indicator bar for each video
         x0 = padding['timeline_left'] + 24
         y0 = padding['timeline_top']
         ht = 40 # Height of timeline bars
@@ -220,31 +219,31 @@ class TestApp(tkinter.Frame):
     def x_key(self, event):
         self.scale = min(1000, self.scale << 1)
     
-    def left_key(self, event, frame_mode: bool=False):
+    def left_key(self, event, mode: str='SCENE'):
         # TODO(sestren): Rewind by only one frame if SHIFT held down
-        if frame_mode:
-            for (run_name, feed) in self.feeds:
-                feed.next_frame()
-        else:
-            if self.offset_cursor >= len(self.offsets):
-                for i in range(len(self.offsets)):
-                    self.offsets[i] -= 1
-                self.offset_cursor = len(self.offsets)
-            else:
-                self.offsets[self.offset_cursor] -= 1
-        for i, (run_name, feed) in enumerate(self.feeds):
-            if frame_mode:
-                pass
-            else:
+        for offset_id in range(len(self.offsets)):
+            if all([
+                self.offset_cursor != offset_id,
+                self.offset_cursor < len(self.offsets),
+            ]):
+                continue
+            (run_name, feed) = self.feeds[offset_id]
+            if mode == 'SCENE':
+                self.offsets[offset_id] = max(
+                    0,
+                    self.offsets[offset_id] - 1,
+                )
                 scrub = 0
-                for j in range(self.offsets[i]):
-                    scrub += self.scenes[run_name][j][2]
+                for i in range(self.offsets[offset_id]):
+                    scrub += self.scenes[run_name][i][2]
                 feed.set_time(scrub)
                 feed.next_frame()
+            elif mode == 'FRAME':
+                print('TODO: Implement going back a frame')
+                # feed.prev_frame()
     
     def shifted_left_key(self, event):
-        print('TODO: Implement going back a frame')
-        # self.left_key(event, 'FRAME')
+        self.left_key(event, 'FRAME')
     
     def right_key(self, event, mode: str='SCENE'):
         # advance all active timelines by 1 frame or 1 scene
