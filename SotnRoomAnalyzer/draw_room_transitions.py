@@ -7,10 +7,14 @@ import argparse
 from cv2 import cv2
 import tkinter
 from PIL import Image, ImageTk
-# import PIL.ImageTk
+
+MS_PER_SEC = 1000 # Number of milliseconds in a second
 
 class VideoFeed():
     def __init__(self, video_file: str):
+        # TODO(sestren): Figure out how to fetch the video's target FPS
+        self.framerate: int = 60 # cv2.CAP_PROP_FPS
+        print('framerate:', self.framerate)
         self.video = cv2.VideoCapture(video_file)
         self.read_ind, self.raw_frame = self.video.read()
         # Determine length of video
@@ -25,7 +29,7 @@ class VideoFeed():
     
     def next_frame(self, skip: int=0):
         for _ in range(skip):
-            self.read_ind = self.video.grab() > 0
+            self.read_ind = (self.video.grab() > 0)
         if skip <= 0:
             self.read_ind, self.raw_frame = self.video.read()
         else:
@@ -33,9 +37,16 @@ class VideoFeed():
         self.position_in_ms = int(self.video.get(cv2.CAP_PROP_POS_MSEC))
         self.raw_frame = cv2.cvtColor(self.raw_frame, cv2.COLOR_BGR2RGB)
     
+    def prev_frame(self):
+        delta_time: float = (MS_PER_SEC * 2) / self.framerate
+        delta_in_ms: int = int(delta_time + 0.5)
+        time_in_ms: int = self.position_in_ms - delta_in_ms
+        self.set_time(time_in_ms)
+    
     def set_time(self, time_in_ms: int):
         self.video.set(cv2.CAP_PROP_POS_MSEC, time_in_ms)
         self.position_in_ms = int(self.video.get(cv2.CAP_PROP_POS_MSEC))
+        self.next_frame()
 
 class TestApp(tkinter.Frame):
     '''
@@ -119,7 +130,7 @@ class TestApp(tkinter.Frame):
         self.canvas.create_rectangle(
             x0,
             y0,
-            x0 + (1 * 1000) / self.scale, # 1-second wide
+            x0 + (1 * MS_PER_SEC) / self.scale, # 1-second wide
             y0 + 52 * len(self.offsets),
             fill='#ff0000',
         )
@@ -237,10 +248,8 @@ class TestApp(tkinter.Frame):
                 for i in range(self.offsets[offset_id]):
                     scrub += self.scenes[run_name][i][2]
                 feed.set_time(scrub)
-                feed.next_frame()
-            elif mode == 'FRAME':
-                print('TODO: Implement going back a frame')
-                # feed.prev_frame()
+            elif mode == 'FRAME' and not self.playing_ind:
+                feed.prev_frame()
     
     def shifted_left_key(self, event):
         self.left_key(event, 'FRAME')
@@ -263,8 +272,7 @@ class TestApp(tkinter.Frame):
                 for i in range(self.offsets[offset_id]):
                     scrub += self.scenes[run_name][i][2]
                 feed.set_time(scrub)
-                feed.next_frame()
-            elif mode == 'FRAME':
+            elif mode == 'FRAME' and not self.playing_ind:
                 feed.next_frame()
     
     def shifted_right_key(self, event):
