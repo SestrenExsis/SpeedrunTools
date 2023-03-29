@@ -38,7 +38,12 @@ class VideoFeed():
         self.position_in_ms = int(self.video.get(cv2.CAP_PROP_POS_MSEC))
 
 class TestApp(tkinter.Frame):
-
+    '''
+    Z and X keys zoom in and out on timeline view
+    UP and DOWN keys determine which timeline(s) are selected
+    LEFT and RIGHT keys move back and forth between scenes
+    SPACE pauses and resumes playback
+    '''
     def __init__(self,
         master: tkinter.Tk,
         runs: dict,
@@ -52,8 +57,11 @@ class TestApp(tkinter.Frame):
         self.master.bind('<Right>', self.right_key)
         self.master.bind('<Up>', self.up_key)
         self.master.bind('<Down>', self.down_key)
+        self.master.bind('<Shift-Left>', self.shifted_left_key)
+        self.master.bind('<Shift-Right>', self.shifted_right_key)
         self.master.bind('<z>', self.z_key)
         self.master.bind('<x>', self.x_key)
+        self.master.bind('<space>', self.space_key)
         self.main_frame = tkinter.Frame()
         self.main_frame.pack(fill='both', expand=True)
         self.pack()
@@ -63,11 +71,11 @@ class TestApp(tkinter.Frame):
         self.width = width
         self.height = height
         self.scenes = {}
-        self.feeds = {}
+        self.feeds = []
         for run_name, (video_file, source_file) in runs.items():
             with open(source_file) as open_file:
                 self.scenes[run_name] = []
-                self.feeds[run_name] = VideoFeed(video_file)
+                self.feeds.append((run_name, VideoFeed(video_file)))
                 for line in open_file.readlines():
                     parts = line.split(', ')
                     start_time_code = parts[0]
@@ -87,11 +95,12 @@ class TestApp(tkinter.Frame):
                     self.scenes[run_name].append(scene)
         self.offsets = [0] * len(runs)
         self.offset_cursor = 0
+        self.playing_ind = True
         self.scale = 1
         # Grab a frame
         self.durations = {}
         self.photo_images = {}
-        for run_name, feed in self.feeds.items():
+        for (run_name, feed) in self.feeds:
             feed.next_frame()
             image_frame = Image.fromarray(feed.raw_frame)
             photo_image = ImageTk.PhotoImage(image=image_frame)
@@ -107,7 +116,8 @@ class TestApp(tkinter.Frame):
         x0 = padding['timeline_left'] + 24
         y0 = padding['timeline_top']
         self.canvas.delete('all')
-        # TODO: Have benchmark be width of slowest section, with -1, -3, and -9 second offsets
+        # TODO(sestren): Indicator bar moves along with playback
+        # TODO(sestren): Draw a separate indicator bar for each video
         width = (1 * 1000) / self.scale # 1-second wide
         self.canvas.create_rectangle(
             x0,
@@ -150,14 +160,16 @@ class TestApp(tkinter.Frame):
                     )
                 x = x + width
             y0 += 44
+        # Draw the current frames of each video
         x0 = padding['video_left']
         y0 = padding['video_top']
         scene_durations = []
-        for i, (run_name, feed) in enumerate(self.feeds.items()):
+        for offset_id, (run_name, feed) in enumerate(self.feeds):
             scene_durations.append(
-                self.scenes[run_name][self.offsets[i]][2]
+                self.scenes[run_name][self.offsets[offset_id]][2]
             )
-            feed.next_frame()
+            if self.playing_ind:
+                feed.next_frame()
             image_frame = Image.fromarray(feed.raw_frame)
             self.photo_images[run_name].paste(image_frame)
             self.canvas.create_image(
@@ -172,19 +184,20 @@ class TestApp(tkinter.Frame):
                 y0 + 8,
                 fill="white",
                 font="Consolas 12",
-                text=scene_durations[i],
+                text=scene_durations[offset_id],
                 anchor=tkinter.NE,
             )
-            if i > 0:
+            if offset_id > 0:
                 self.canvas.create_text(
                     x0 + 320,
                     y0 + 32,
                     fill="black",
                     font="Consolas 12 bold",
-                    text=scene_durations[i] - scene_durations[0],
+                    text=scene_durations[offset_id] - scene_durations[0],
                     anchor=tkinter.NE,
                 )
             y0 += 200
+        # Draw indicators of which timeline(s) are selected
         x0 = padding['timeline_left']
         y0 = padding['timeline_top']
         for offset_id in range(len(self.offsets)):
@@ -207,37 +220,65 @@ class TestApp(tkinter.Frame):
     def x_key(self, event):
         self.scale = min(1000, self.scale << 1)
     
-    def left_key(self, event):
-        if self.offset_cursor >= len(self.offsets):
-            for i in range(len(self.offsets)):
-                self.offsets[i] -= 1
-            self.offset_cursor = len(self.offsets)
+    def left_key(self, event, frame_mode: bool=False):
+        # TODO(sestren): Rewind by only one frame if SHIFT held down
+        if frame_mode:
+            for (run_name, feed) in self.feeds:
+                feed.next_frame()
         else:
-            self.offsets[self.offset_cursor] -= 1
-        for i, (run_name, feed) in enumerate(self.feeds.items()):
-            scrub = 0
-            for i in range(self.offsets[i]):
-                scrub += self.scenes[run_name][i][2]
-            feed.set_time(scrub)
+            if self.offset_cursor >= len(self.offsets):
+                for i in range(len(self.offsets)):
+                    self.offsets[i] -= 1
+                self.offset_cursor = len(self.offsets)
+            else:
+                self.offsets[self.offset_cursor] -= 1
+        for i, (run_name, feed) in enumerate(self.feeds):
+            if frame_mode:
+                pass
+            else:
+                scrub = 0
+                for j in range(self.offsets[i]):
+                    scrub += self.scenes[run_name][j][2]
+                feed.set_time(scrub)
+                feed.next_frame()
     
-    def right_key(self, event):
-        if self.offset_cursor >= len(self.offsets):
-            for i in range(len(self.offsets)):
-                self.offsets[i] += 1
-            self.offset_cursor = len(self.offsets)
-        else:
-            self.offsets[self.offset_cursor] += 1
-        for i, (run_name, feed) in enumerate(self.feeds.items()):
-            scrub = 0
-            for i in range(self.offsets[i]):
-                scrub += self.scenes[run_name][i][2]
-            feed.set_time(scrub)
+    def shifted_left_key(self, event):
+        print('TODO: Implement going back a frame')
+        # self.left_key(event, 'FRAME')
+    
+    def right_key(self, event, mode: str='SCENE'):
+        # advance all active timelines by 1 frame or 1 scene
+        for offset_id in range(len(self.offsets)):
+            if all([
+                self.offset_cursor != offset_id,
+                self.offset_cursor < len(self.offsets),
+            ]):
+                continue
+            (run_name, feed) = self.feeds[offset_id]
+            if mode == 'SCENE':
+                self.offsets[offset_id] = min(
+                    len(self.scenes[run_name]),
+                    self.offsets[offset_id] + 1,
+                )
+                scrub = 0
+                for i in range(self.offsets[offset_id]):
+                    scrub += self.scenes[run_name][i][2]
+                feed.set_time(scrub)
+                feed.next_frame()
+            elif mode == 'FRAME':
+                feed.next_frame()
+    
+    def shifted_right_key(self, event):
+        self.right_key(event, 'FRAME')
     
     def up_key(self, event):
         self.offset_cursor = max(0, self.offset_cursor - 1)
     
     def down_key(self, event):
         self.offset_cursor = min(len(self.offsets), self.offset_cursor + 1)
+    
+    def space_key(self, event):
+        self.playing_ind = not self.playing_ind
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
