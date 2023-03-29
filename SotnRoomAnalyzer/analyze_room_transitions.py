@@ -153,17 +153,17 @@ if __name__ == '__main__':
     if not os.path.isfile(args.target_file):
         min_frame_mean, max_frame_mean = detect_mean_range(
             args.source_file,
-            (0.0, 892.00),
+            (0.0, 240.00),
         )
         print('Min frame mean =', min_frame_mean)
         print('Max frame mean =', max_frame_mean)
         buckets = detect_scenes_and_colors(
             args.source_file,
-            (0.0, 1300.00),
+            (0.0, 2400.00),
             (min_frame_mean, max_frame_mean),
             (0.004, 0.906), # mean_thresholds (low, high)
         )
-        # 0.4% darkest and 9.4% brightest seem good benchmarks
+        # 0.4% darkest and 90.4% brightest seem good benchmarks
         scenes = []
         for bucket_id in (range(3)):
             for i in range(len(buckets[bucket_id])):
@@ -188,25 +188,3 @@ if __name__ == '__main__':
                     scene[2] = next_scene_start_time_in_ms - curr_scene_start_time_in_ms
                     scene = tuple(scene)
                 output_file.write(', '.join(map(str, scene)) + '\n')
-    # Done
-    '''
-    How to identify Prologue scene:
-        [Blue scene, variable length]
-        [BLACK, short]
-        [Very dark scene, short on Xbox 360, long on PS1]
-        [BLACK, short]
-        [Prologue]
-    How to identify Dracula Kill:
-        1-3 very bright frames followed by 1-3 darker frames, repeated 5 times
-        BB--BB--BB--BB--BB---------
-    Dr4gonBlitz's 16:36 WR run :
-        Prologue scene starts at 00:25.458
-        Official run starts at   00:27.303
-        Offset is 1.845s after Prologue scene begins
-    Sestren's 18:51 PB run:
-        Prologue scene starts at 00:03.999
-        Official run starts at   00:05.827
-        Offset is 1.828s after Prologue scene begins
-    Run start:
-        ~2.0 seconds after the scene transition into "Prologue"
-    '''

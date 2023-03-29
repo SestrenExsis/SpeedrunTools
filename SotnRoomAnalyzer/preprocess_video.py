@@ -78,7 +78,6 @@ if __name__ == '__main__':
     Processes a video using the following steps:
         1) Crops the video to the clipped region's bounding box
         2) Resizes the video using nearest neighbor interpolation
-    Sample from a clipped region of video segment to determine min and max brightness
     Example usage:
         python preprocess_video "Alucard Any%% NSC 01 - 16-36-802 - Dr4gonBlitz.mp4" 0 88 1237 1021 20 1030
         python preprocess_video "SOTN Alucard Any%% NSC - #279 2021-05-15 07-30-36 Complete 18-52-300 Timed 18-51-600.mp4" 680 87 1915 1025 0 1140
