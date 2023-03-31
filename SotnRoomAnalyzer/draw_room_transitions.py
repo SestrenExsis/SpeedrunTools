@@ -55,6 +55,8 @@ class TestApp(tkinter.Frame):
     LEFT and RIGHT keys move back and forth between scenes
     SPACE pauses and resumes playback
     '''
+    # TODO(sestren): Add button to advance to next black frame
+    # TODO(sestren): Add button to advance to next repeated frame
     def __init__(self,
         master: tkinter.Tk,
         runs: dict,
@@ -124,7 +126,7 @@ class TestApp(tkinter.Frame):
             'video_left': 40,
             'video_top': 120,
         }
-        x0 = padding['timeline_left'] + 24
+        x0 = padding['timeline_left'] + 300
         y0 = padding['timeline_top']
         self.canvas.delete('all')
         self.canvas.create_rectangle(
@@ -136,7 +138,7 @@ class TestApp(tkinter.Frame):
         )
         # TODO(sestren): Indicator bar moves along with playback
         # TODO(sestren): Draw a separate indicator bar for each video
-        x0 = padding['timeline_left'] + 24
+        x0 = padding['timeline_left'] + 300
         y0 = padding['timeline_top']
         ht = 40 # Height of timeline bars
         for i, run_name in enumerate(self.scenes):
@@ -147,7 +149,7 @@ class TestApp(tkinter.Frame):
             for j in range(offset):
                 scrub += self.scenes[run_name][j][2]
             for j, row_data in enumerate(run_data):
-                visible = j >= self.offsets[i]
+                prior_timeline_ind = j < self.offsets[i]
                 start_time_code = row_data[0]
                 scene_type = row_data[1]
                 scene_duration_in_ms = row_data[2]
@@ -160,14 +162,16 @@ class TestApp(tkinter.Frame):
                 else:
                     r, g, b = row_data[3:]
                     color = f'#{r:02x}{g:02x}{b:02x}'
-                if visible:
-                    self.canvas.create_rectangle(
-                        x0 + ((x - scrub) / self.scale),
-                        y0,
-                        x0 + ((x + width - scrub) / self.scale),
-                        y0 + ht,
-                        fill=color,
-                    )
+                offset = 0
+                if prior_timeline_ind:
+                    offset = -16
+                self.canvas.create_rectangle(
+                    x0 + ((x - scrub) / self.scale) + offset,
+                    y0,
+                    x0 + ((x + width - scrub) / self.scale) + offset,
+                    y0 + ht,
+                    fill=color,
+                )
                 x = x + width
             y0 += 44
         # Draw the current frames of each video
@@ -208,7 +212,7 @@ class TestApp(tkinter.Frame):
                 )
             y0 += 200
         # Draw indicators of which timeline(s) are selected
-        x0 = padding['timeline_left']
+        x0 = padding['timeline_left'] + 300 - 12
         y0 = padding['timeline_top']
         for offset_id in range(len(self.offsets)):
             if any([
@@ -218,8 +222,8 @@ class TestApp(tkinter.Frame):
                 self.canvas.create_rectangle(
                     x0,
                     y0 + 0 + 12 + 44 * offset_id,
-                    x0 + 16,
-                    y0 + 16 + 12 + 44 * offset_id,
+                    x0 + 8,
+                    y0 + 8 + 12 + 44 * offset_id,
                     fill='#00ffff',
                 )
         self.after(17, self.update_and_render)
