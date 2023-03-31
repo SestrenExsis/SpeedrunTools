@@ -70,8 +70,6 @@ class TestApp(tkinter.Frame):
         self.master.bind('<Right>', self.right_key)
         self.master.bind('<Up>', self.up_key)
         self.master.bind('<Down>', self.down_key)
-        self.master.bind('<Shift-Left>', self.shifted_left_key)
-        self.master.bind('<Shift-Right>', self.shifted_right_key)
         self.master.bind('<z>', self.z_key)
         self.master.bind('<x>', self.x_key)
         self.master.bind('<space>', self.space_key)
@@ -234,7 +232,8 @@ class TestApp(tkinter.Frame):
     def x_key(self, event):
         self.scale = min(1000, self.scale << 1)
     
-    def left_key(self, event, mode: str='SCENE'):
+    def left_key(self, event):
+        mode = 'SCENE' if self.playing_ind else 'FRAME'
         # TODO(sestren): Rewind by only one frame if SHIFT held down
         for offset_id in range(len(self.offsets)):
             if all([
@@ -255,10 +254,8 @@ class TestApp(tkinter.Frame):
             elif mode == 'FRAME' and not self.playing_ind:
                 feed.prev_frame()
     
-    def shifted_left_key(self, event):
-        self.left_key(event, 'FRAME')
-    
-    def right_key(self, event, mode: str='SCENE'):
+    def right_key(self, event):
+        mode = 'SCENE' if self.playing_ind else 'FRAME'
         # advance all active timelines by 1 frame or 1 scene
         for offset_id in range(len(self.offsets)):
             if all([
@@ -278,9 +275,6 @@ class TestApp(tkinter.Frame):
                 feed.set_time(scrub)
             elif mode == 'FRAME' and not self.playing_ind:
                 feed.next_frame()
-    
-    def shifted_right_key(self, event):
-        self.right_key(event, 'FRAME')
     
     def up_key(self, event):
         self.offset_cursor = max(0, self.offset_cursor - 1)
