@@ -112,44 +112,44 @@ function action(dpad, actions, frames)
 end
 
 function shield_dash()
+    action("", "Shield", 2)
+    action("", "Dash Shield", 3)
     action("", "Dash", 2)
-    action("", "Dash Shield", 2)
-    action("", "Dash", 2)
-    action("", "", 2)
+    action("", "", 3)
 end
 
-function wingsmash_left()
-    action("", "Jump", 1)
-    action("L", "Jump", 1)
-    action("LU", "Jump", 1)
-    action("U", "Jump", 1)
-    action("UR", "Jump", 1)
-    action("R", "Jump", 1)
-    action("RD", "Jump", 1)
-    action("D", "Jump", 1)
-    action("DL", "Jump", 1)
-    action("L", "Jump", 1)
+function wing_smash_left()
+    action("", "Jump", 2)
+    action("L", "Jump", 2)
+    action("LU", "Jump", 2)
+    action("U", "Jump", 2)
+    action("UR", "Jump", 2)
+    action("R", "Jump", 2)
+    action("RD", "Jump", 2)
+    action("D", "Jump", 2)
+    action("DL", "Jump", 2)
+    action("L", "Jump", 2)
 end
 
-function wingsmash_right()
-    action("", "Jump", 1)
-    action("R", "Jump", 1)
-    action("RU", "Jump", 1)
-    action("U", "Jump", 1)
-    action("UL", "Jump", 1)
-    action("L", "Jump", 1)
-    action("LD", "Jump", 1)
-    action("D", "Jump", 1)
-    action("DR", "Jump", 1)
-    action("R", "Jump", 1)
+function wing_smash_right()
+    action("", "Jump", 2)
+    action("R", "Jump", 2)
+    action("RU", "Jump", 2)
+    action("U", "Jump", 2)
+    action("UL", "Jump", 2)
+    action("L", "Jump", 2)
+    action("LD", "Jump", 2)
+    action("D", "Jump", 2)
+    action("DR", "Jump", 2)
+    action("R", "Jump", 2)
 end
 
-function wingsmash()
+function wing_smash()
     local facing = mainmemory.read_u32_le(ADDRESSES.alucard.facing)
     if facing == 1 then
-        wingsmash_left()
+        wing_smash_left()
     else
-        wingsmash_right()
+        wing_smash_right()
     end
 end
 
@@ -158,7 +158,7 @@ function check_for_macro_input()
     if inputs["Keypad1"] then
         shield_dash()
     elseif inputs["Keypad2"] then
-        wingsmash()
+        wing_smash()
     end
 end
 
