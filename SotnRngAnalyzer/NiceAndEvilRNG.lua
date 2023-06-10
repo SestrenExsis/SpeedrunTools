@@ -33,10 +33,7 @@ TUMBLERS = {
 function advance_tumbler(__tumblers, __index, __seed)
     local a = __tumblers[__index].a
     local b = __tumblers[__index].b
-    local result = bit.band(
-        0xFFFFFFFF,
-        mul32(__seed, a).lo + b
-    )
+    local result = 0xFFFFFFFF & (mul32(__seed, a).lo + b)
     return result
 end
 
@@ -45,9 +42,9 @@ function seed_index(__target_seed, __tumblers)
     local temp = 0x00000000
     -- Unlock tumblers 1 through 8
     for i=1,8 do
-        local mask = bit.lshift(1, 4 * i) - 1
-        local step_size = bit.lshift(1, 4 * (i - 1))
-        while bit.band(temp, mask) ~= bit.band(__target_seed, mask) do
+        local mask = (1 << (4 * i)) - 1
+        local step_size = (1 << (4 * (i - 1)))
+        while (temp & mask) ~= (__target_seed & mask) do
             temp = advance_tumbler(__tumblers, i, temp)
             result = result + step_size
         end
@@ -59,14 +56,14 @@ end
 
 function mul32(__a, __b)
     -- Split a and b into their high and low bytes
-    local a0 = bit.rshift(__a, 0x10)
-    local a1 = bit.band(__a, 0xffff)
-    local b0 = bit.rshift(__b, 0x10)
-    local b1 = bit.band(__b, 0xffff)
+    local a0 = (__a >> 0x10)
+    local a1 = (__a & 0xffff)
+    local b0 = (__b >> 0x10)
+    local b1 = (__b & 0xffff)
     -- Use FOIL to stay within Lua number precision bounds
     local temp = a0 * b1 + a1 * b0
-    local lo = a1 * b1 + bit.lshift(bit.band(temp, 0xffff), 0x10)
-    local hi = a0 * b0 + bit.rshift(temp, 0x10)
+    local lo = a1 * b1 + ((temp & 0xffff) << 0x10)
+    local hi = a0 * b0 + (temp >> 0x10)
     -- Output the low and high 32-bit halves of the product separately
     local result = {hi = hi, lo = lo}
     return result
@@ -93,7 +90,7 @@ while true do
     gui.pixelText(x + 20, y + 0, "seed     rng  index    delta", 0xff999999)
     -- Show nice RNG info
     local nice_seed = mainmemory.read_u32_le(ADDRESSES.nice_seed)
-    local nice_rng = bit.band(0xff, bit.rshift(nice_seed, 0x18))
+    local nice_rng = (0xff & (nice_seed >> 0x18))
     local nice_index = seed_index(nice_seed, TUMBLERS.nice_seed)
     local nice_delta = nice_index - _prev_nice_index
     if nice_delta > 0 then
@@ -108,7 +105,7 @@ while true do
     gui.pixelText(x + 112, y + 8, nice_delta, 0xff9999ff)
     -- Show evil RNG info
     local evil_seed = mainmemory.read_u32_le(ADDRESSES.evil_seed)
-    local evil_rng = bit.band(0x7fff, bit.rshift(evil_seed, 0x11))
+    local evil_rng = (0x7fff & (evil_seed >> 0x11))
     local evil_index = seed_index(evil_seed, TUMBLERS.evil_seed)
     local evil_delta = evil_index - _prev_evil_index
     if evil_delta > 0 then

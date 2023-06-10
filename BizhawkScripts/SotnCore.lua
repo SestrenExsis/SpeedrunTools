@@ -78,10 +78,7 @@ P.Tumblers = {
 P.advance_tumbler = function(__tumblers, __index, __seed)
     local a = __tumblers[__index].A
     local b = __tumblers[__index].B
-    local result = bit.band(
-        0xFFFFFFFF,
-        P.mul32(__seed, a).lo + b
-    )
+    local result = 0xFFFFFFFF & (P.mul32(__seed, a).lo + b))
     return result
 end
 
@@ -90,9 +87,9 @@ P.seed_index = function(__target_seed, __tumblers)
     local temp = 0x00000000
     -- Unlock tumblers 1 through 8
     for i=1,8 do
-        local mask = bit.lshift(1, 4 * i) - 1
-        local step_size = bit.lshift(1, 4 * (i - 1))
-        while bit.band(temp, mask) ~= bit.band(__target_seed, mask) do
+        local mask = (1 << (4 * i)) - 1
+        local step_size = (1 << (4 * (i - 1)))
+        while (temp & mask) ~= (__target_seed & mask) do
             temp = P.advance_tumbler(__tumblers, i, temp)
             result = result + step_size
         end
@@ -102,14 +99,14 @@ end
 
 P.mul32 = function(__a, __b)
     -- Split a and b into their high and low bytes
-    local a0 = bit.rshift(__a, 0x10)
-    local a1 = bit.band(__a, 0xffff)
-    local b0 = bit.rshift(__b, 0x10)
-    local b1 = bit.band(__b, 0xffff)
+    local a0 = (__a >> 0x10)
+    local a1 = (__a & 0xffff)
+    local b0 = (__b >> 0x10)
+    local b1 = (__b & 0xffff)
     -- Use FOIL to stay within Lua number precision bounds
     local temp = a0 * b1 + a1 * b0
-    local lo = a1 * b1 + bit.lshift(bit.band(temp, 0xffff), 0x10)
-    local hi = a0 * b0 + bit.rshift(temp, 0x10)
+    local lo = a1 * b1 + ((temp & 0xffff) << 0x10)
+    local hi = a0 * b0 + (temp >> 0x10)
     -- Output the low and high 32-bit halves of the product separately
     local result = {hi = hi, lo = lo}
     return result
@@ -132,7 +129,7 @@ P.draw_rng = function(x, y)
     gui.pixelText(x + 20, y + 0, "seed     rng  index    delta", 0xff999999)
     -- Show nice RNG info
     local nice_seed = mainmemory.read_u32_le(SotnCore.Addresses.NiceSeed)
-    local nice_rng = bit.band(0xff, bit.rshift(nice_seed, 0x18))
+    local nice_rng = (0xff & (nice_seed >> 0x18))
     local nice_index = SotnCore.seed_index(nice_seed, SotnCore.Tumblers.NiceSeed)
     local nice_delta = nice_index - P.prev_nice_index
     if nice_delta > 0 then
@@ -147,7 +144,7 @@ P.draw_rng = function(x, y)
     gui.pixelText(x + 112, y + 8, nice_delta, 0xff9999ff)
     -- Show evil RNG info
     local evil_seed = mainmemory.read_u32_le(SotnCore.Addresses.EvilSeed)
-    local evil_rng = bit.band(0x7fff, bit.rshift(evil_seed, 0x11))
+    local evil_rng = (0x7fff & (evil_seed >> 0x11))
     local evil_index = SotnCore.seed_index(evil_seed, SotnCore.Tumblers.EvilSeed)
     local evil_delta = evil_index - P.prev_evil_index
     if evil_delta > 0 then
