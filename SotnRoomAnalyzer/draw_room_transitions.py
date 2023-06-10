@@ -7,46 +7,7 @@ import argparse
 from cv2 import cv2
 import tkinter
 from PIL import Image, ImageTk
-
-MS_PER_SEC = 1000 # Number of milliseconds in a second
-
-class VideoFeed():
-    def __init__(self, video_file: str):
-        # TODO(sestren): Figure out how to fetch the video's target FPS
-        self.framerate: int = 60 # cv2.CAP_PROP_FPS
-        print('framerate:', self.framerate)
-        self.video = cv2.VideoCapture(video_file)
-        self.read_ind, self.raw_frame = self.video.read()
-        # Determine length of video
-        self.video.set(cv2.CAP_PROP_POS_AVI_RATIO, 1.0)
-        self.duration_in_ms = self.video.get(cv2.CAP_PROP_POS_MSEC)
-        self.video.set(cv2.CAP_PROP_POS_AVI_RATIO, 0.0)
-        # )
-        self.position_in_ms = int(self.video.get(cv2.CAP_PROP_POS_MSEC))
-        self.start_in_ms = 0
-        self.end_in_ms = self.duration_in_ms
-        # cap.set(CV_CAP_PROP_BUFFERSIZE, buffer_size_in_frames)
-    
-    def next_frame(self, skip: int=0):
-        for _ in range(skip):
-            self.read_ind = (self.video.grab() > 0)
-        if skip <= 0:
-            self.read_ind, self.raw_frame = self.video.read()
-        else:
-            self.read_ind, self.raw_frame = self.video.retrieve()
-        self.position_in_ms = int(self.video.get(cv2.CAP_PROP_POS_MSEC))
-        self.raw_frame = cv2.cvtColor(self.raw_frame, cv2.COLOR_BGR2RGB)
-    
-    def prev_frame(self):
-        delta_time: float = (MS_PER_SEC * 2) / self.framerate
-        delta_in_ms: int = int(delta_time + 0.5)
-        time_in_ms: int = self.position_in_ms - delta_in_ms
-        self.set_time(time_in_ms)
-    
-    def set_time(self, time_in_ms: int):
-        self.video.set(cv2.CAP_PROP_POS_MSEC, time_in_ms)
-        self.position_in_ms = int(self.video.get(cv2.CAP_PROP_POS_MSEC))
-        self.next_frame()
+import sotn_run_analyzer as sotn
 
 class TestApp(tkinter.Frame):
     '''
@@ -86,7 +47,7 @@ class TestApp(tkinter.Frame):
         for run_name, (video_file, source_file) in runs.items():
             with open(source_file) as open_file:
                 self.scenes[run_name] = []
-                self.feeds.append((run_name, VideoFeed(video_file)))
+                self.feeds.append((run_name, sotn.VideoFeed(video_file)))
                 for line in open_file.readlines():
                     parts = line.split(', ')
                     start_time_code = parts[0]
@@ -130,12 +91,10 @@ class TestApp(tkinter.Frame):
         self.canvas.create_rectangle(
             x0,
             y0,
-            x0 + (1 * MS_PER_SEC) / self.scale, # 1-second wide
+            x0 + (1 * sotn.MS_PER_SEC) / self.scale, # 1-second wide
             y0 + 52 * len(self.offsets),
             fill='#ff0000',
         )
-        # TODO(sestren): Indicator bar moves along with playback
-        # TODO(sestren): Draw a separate indicator bar for each video
         x0 = padding['timeline_left'] + 300
         y0 = padding['timeline_top']
         ht = 40 # Height of timeline bars
@@ -147,7 +106,6 @@ class TestApp(tkinter.Frame):
             for j in range(offset):
                 scrub += self.scenes[run_name][j][2]
             for j, row_data in enumerate(run_data):
-                prior_timeline_ind = j < self.offsets[i]
                 start_time_code = row_data[0]
                 scene_type = row_data[1]
                 scene_duration_in_ms = row_data[2]
@@ -160,18 +118,41 @@ class TestApp(tkinter.Frame):
                 else:
                     r, g, b = row_data[3:]
                     color = f'#{r:02x}{g:02x}{b:02x}'
-                offset = 0
-                if prior_timeline_ind:
-                    offset = -16
                 self.canvas.create_rectangle(
-                    x0 + ((x - scrub) / self.scale) + offset,
+                    x0 + ((x - scrub) / self.scale),
                     y0,
-                    x0 + ((x + width - scrub) / self.scale) + offset,
+                    x0 + ((x + width - scrub) / self.scale),
                     y0 + ht,
                     fill=color,
                 )
                 x = x + width
+            # TODO(sestren): Draw line at playback head for each timeline
+            (run_name, feed) = self.feeds[i]
+            head = feed.position_in_ms
+            x = (head - scrub + padding['timeline_left'] + 4)
+            self.canvas.create_line(
+                x / self.scale + 300,
+                y0,
+                x / self.scale + 300,
+                y0 + 26 * len(self.offsets),
+                fill='#ffffff',
+            )
             y0 += 44
+        # Draw indicators of which timeline(s) are selected
+        x0 = padding['timeline_left'] + 300 - 4
+        y0 = padding['timeline_top']
+        for offset_id in range(len(self.offsets)):
+            if any([
+                self.offset_cursor >= len(self.offsets),
+                self.offset_cursor == offset_id,
+            ]):
+                self.canvas.create_rectangle(
+                    x0,
+                    y0 + 0 + 12 + 44 * offset_id,
+                    x0 + 8,
+                    y0 + 8 + 12 + 44 * offset_id,
+                    fill='#00ffff',
+                )
         # Draw the current frames of each video
         x0 = padding['video_left']
         y0 = padding['video_top']
@@ -209,21 +190,6 @@ class TestApp(tkinter.Frame):
                     anchor=tkinter.NE,
                 )
             y0 += 200
-        # Draw indicators of which timeline(s) are selected
-        x0 = padding['timeline_left'] + 300 - 12
-        y0 = padding['timeline_top']
-        for offset_id in range(len(self.offsets)):
-            if any([
-                self.offset_cursor >= len(self.offsets),
-                self.offset_cursor == offset_id,
-            ]):
-                self.canvas.create_rectangle(
-                    x0,
-                    y0 + 0 + 12 + 44 * offset_id,
-                    x0 + 8,
-                    y0 + 8 + 12 + 44 * offset_id,
-                    fill='#00ffff',
-                )
         self.after(17, self.update_and_render)
     
     def z_key(self, event):
@@ -233,8 +199,8 @@ class TestApp(tkinter.Frame):
         self.scale = min(1000, self.scale << 1)
     
     def left_key(self, event):
+        # backtrack all active timelines by 1 frame or 1 scene
         mode = 'SCENE' if self.playing_ind else 'FRAME'
-        # TODO(sestren): Rewind by only one frame if SHIFT held down
         for offset_id in range(len(self.offsets)):
             if all([
                 self.offset_cursor != offset_id,
@@ -255,8 +221,8 @@ class TestApp(tkinter.Frame):
                 feed.prev_frame()
     
     def right_key(self, event):
-        mode = 'SCENE' if self.playing_ind else 'FRAME'
         # advance all active timelines by 1 frame or 1 scene
+        mode = 'SCENE' if self.playing_ind else 'FRAME'
         for offset_id in range(len(self.offsets)):
             if all([
                 self.offset_cursor != offset_id,
