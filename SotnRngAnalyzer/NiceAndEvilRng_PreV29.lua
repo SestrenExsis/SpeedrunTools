@@ -14,7 +14,7 @@ function mul32(__a, __b)
     local b1 = bit.band(__b, 0xffff)
     -- Use FOIL to stay within Lua number precision bounds
     local temp = a0 * b1 + a1 * b0
-    local lo = a1 * b1 + bit.lshift(band(temp, 0xffff), 0x10)
+    local lo = a1 * b1 + bit.lshift(bit.band(temp, 0xffff), 0x10)
     local hi = a0 * b0 + bit.rshift(temp, 0x10)
     -- Output the low and high 32-bit halves of the product separately
     local result = {hi = hi, lo = lo}
