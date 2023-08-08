@@ -36,7 +36,7 @@ P.advance_tumbler = function(__tumblers, __index, __seed)
     local a = __tumblers[__index].A
     local b = __tumblers[__index].B
     local result = (
-        0xFFFFFFFF & P.mul32(__seed, a).lo + b
+        0xffffffff & P.mul32(__seed, a).lo + b
     )
     return result
 end
@@ -90,6 +90,32 @@ P.text = function(__col, __row, __message, __color)
     P.canvas.DrawText(x, y, __message, __color, 0xff000000, font_height)
 end
 
+P.set_nice_rng_index = function(__index)
+    local nice_seed = 0x00000000
+    for j = 1, __index do
+        nice_seed = P.advance_tumbler(P.Tumblers.NiceSeed, 1, nice_seed)
+    end
+    mainmemory.write_u32_le(P.Addresses.NiceSeed, nice_seed)
+end
+
+P.increment_nice_rng = function()
+    local nice_seed = mainmemory.read_u32_le(P.Addresses.NiceSeed)
+    local nice_index = P.seed_index(nice_seed, P.Tumblers.NiceSeed)
+    if nice_index < 0xffffffff then
+        nice_index = nice_index + 1
+        P.set_nice_rng_index(nice_index)
+    end
+end
+
+P.decrement_nice_rng = function()
+    local nice_seed = mainmemory.read_u32_le(P.Addresses.NiceSeed)
+    local nice_index = P.seed_index(nice_seed, P.Tumblers.NiceSeed)
+    if nice_index > 0 then
+        nice_index = (nice_index - 1) % 0xffffffff
+        P.set_nice_rng_index(nice_index)
+    end
+end
+
 P.draw = function()
     P.canvas.Clear(0xff000000)
     P.text(5, 0, "seed      rng  index    delta", 0xff999999, 0xff000000)
@@ -119,19 +145,44 @@ P.draw = function()
     P.text(14, 2, P.hex(evil_rng, 4))
     P.text(19, 2, P.evil_index)
     P.text(28, 2, evil_delta, 0xff9999ff)
+    -- Spittlebone RNG
+    local msg = ""
+    local nice_seed = P.nice_seed
+    local bad_count = 0
+    for i=1,61 do
+        nice_seed = P.advance_tumbler(P.Tumblers.NiceSeed, 1, nice_seed)
+        nice_rng = (0x1f & (nice_seed >> 0x18))
+        if nice_rng == 0 then
+            msg = msg.."|"
+            bad_count = bad_count + 1
+        else
+            msg = msg.."."
+        end
+    end
+    local color = 0xff00ff00
+    if bad_count > 2 then
+        color = 0xffff0000
+    elseif bad_count == 2 then
+        color = 0xffff9900
+    elseif bad_count == 1 then
+        color = 0xffffff00
+    end
+    P.text(0, 5, "spittlebone: "..msg, color, 0xff000000)
     P.canvas.Refresh()
 end
 
-gui.defaultBackground(0xffff0000)
-P.prev_nice_index = 0
-P.prev_evil_index = 0
-P.nice_seed = 0
-P.evil_seed = 0
-P.nice_index = 0
-P.evil_index = 0
-P.canvas = gui.createcanvas(300, 52, 4, 4)
-
 P.update = function()
+    local x = P.canvas.GetMouseX()
+    local y = P.canvas.GetMouseY()
+    if x >= 0 and x < P.canvas_width then
+        if y >= 0 and y < P.canvas_height then
+            if input.getmouse().Left then
+                P.decrement_nice_rng()
+            elseif input.getmouse().Right then
+                P.increment_nice_rng()
+            end
+        end
+    end
     P.prev_nice_index = P.nice_index
     P.prev_evil_index = P.evil_index
     P.nice_seed = mainmemory.read_u32_le(P.Addresses.NiceSeed)
@@ -142,6 +193,18 @@ end
 
 event.unregisterbyname("DisplayRNGValues__update")
 event.onframeend(P.update, "DisplayRNGValues__update")
+
+gui.defaultBackground(0xffff0000)
+P.prev_nice_index = 0
+P.prev_evil_index = 0
+P.nice_seed = 0
+P.evil_seed = 0
+P.nice_index = 0
+P.evil_index = 0
+P.canvas_width = 570
+P.canvas_height = 84
+P.canvas = gui.createcanvas(P.canvas_width, P.canvas_height, 4, 4)
+P.canvas.SetTitle("DisplayRNGValues")
 
 P.update()
 while true do
