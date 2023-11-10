@@ -5,110 +5,50 @@ ADDRESSES = {
     }
 }
 
-function set_inputs(dpad, actions)
+dpad_mnemonics = {}
+dpad_mnemonics["U"] = "P1 D-Pad Up"
+dpad_mnemonics["D"] = "P1 D-Pad Down"
+dpad_mnemonics["L"] = "P1 D-Pad Left"
+dpad_mnemonics["R"] = "P1 D-Pad Right"
+
+action_mnemonics = {}
+action_mnemonics["Attack"] = "P1 □"
+action_mnemonics["Dash"] = "P1 △"
+action_mnemonics["Shield"] = "P1 ○"
+action_mnemonics["Jump"] = "P1 X"
+action_mnemonics["Mist"] = "P1 L1"
+action_mnemonics["L2"] = "P1 L2"
+action_mnemonics["Bat"] = "P1 R1"
+action_mnemonics["Wolf"] = "P1 R2"
+action_mnemonics["Map"] = "P1 Select"
+action_mnemonics["Menu"] = "P1 Start"
+
+function action(dpad, actions, frames)
     if dpad == nil then
         dpad = ""
     end
-    local result = {}
-    -- input string format: "UDLRsSTXQOlLrR"
-    local input_str = ""
-    if bizstring.contains(dpad, "U") then
-        input_str = input_str.."U"
-        result["Up"] = true
-    else
-        input_str = input_str.."."
+    if actions == nil then
+        actions = ""
     end
-    if bizstring.contains(dpad, "D") then
-        input_str = input_str.."D"
-        result["Down"] = true
-    else
-        input_str = input_str.."."
+    if frames == nil then
+        frames = 1
     end
-    if bizstring.contains(dpad, "L") then
-        input_str = input_str.."L"
-        result["Left"] = true
-    else
-        input_str = input_str.."."
-    end
-    if bizstring.contains(dpad, "R") then
-        input_str = input_str.."R"
-        result["Right"] = true
-    else
-        input_str = input_str.."."
-    end
-    if bizstring.contains(actions, "Select") then
-        input_str = input_str.."s"
-        result["Select"] = true
-    else
-        input_str = input_str.."."
-    end
-    if bizstring.contains(actions, "Start") then
-        input_str = input_str.."S"
-        result["Start"] = true
-    else
-        input_str = input_str.."."
-    end
-    if bizstring.contains(actions, "Dash") then
-        input_str = input_str.."T"
-        result["Dash"] = true
-    else
-        input_str = input_str.."."
-    end
-    if bizstring.contains(actions, "Jump") then
-        input_str = input_str.."X"
-        result["Jump"] = true
-    else
-        input_str = input_str.."."
-    end
-    if bizstring.contains(actions, "Attack") then
-        input_str = input_str.."Q"
-        result["Attack"] = true
-    else
-        input_str = input_str.."."
-    end
-    if bizstring.contains(actions, "Shield") then
-        input_str = input_str.."O"
-        result["Shield"] = true
-    else
-        input_str = input_str.."."
-    end
-    if bizstring.contains(actions, "Mist") then
-        input_str = input_str.."l"
-        result["Mist"] = true
-    else
-        input_str = input_str.."."
-    end
-    if bizstring.contains(actions, "L2") then
-        input_str = input_str.."L"
-        result["L2"] = true
-    else
-        input_str = input_str.."."
-    end
-    if bizstring.contains(actions, "Bat") then
-        input_str = input_str.."r"
-        result["Bat"] = true
-    else
-        input_str = input_str.."."
-    end
-    if bizstring.contains(actions, "Wolf") then
-        input_str = input_str.."R"
-        result["Wolf"] = true
-    else
-        input_str = input_str.."."
-    end
-    joypad.setfrommnemonicstr("|....|32768,32768,32768,32768,"..input_str.."...|..............|")
-    return result
-end
-
-function next_frame_with_input(dpad, actions)
-    set_inputs(dpad, actions)
-    emu.frameadvance()
-end
-
-function action(dpad, actions, frames)
     for i=1,frames do
-        next_frame_with_input(dpad, actions)
+        local result = {}
+        for key, value in pairs(dpad_mnemonics) do
+            if bizstring.contains(dpad, key) then
+                result[value] = true
+            end
+        end
+        for key, value in pairs(action_mnemonics) do
+            if bizstring.contains(actions, key) then
+                result[value] = true
+            end
+        end
+        joypad.set(result)
+        emu.frameadvance()
     end
+    return result
 end
 
 function shield_dash()
