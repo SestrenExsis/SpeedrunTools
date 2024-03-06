@@ -1,4 +1,22 @@
 
+local function getVersion()
+    local version = "legacy"
+    if client ~= nil and client.getversion ~= nil then
+        version = client.getversion()
+    end
+    -- TODO(sestren): Remove patch version in a more sensible way
+    if version == "2.9.1" then
+        version = "2.9"
+    end
+    return version
+end
+
+if getVersion() == "2.9" then
+    require "BizMath29"
+else
+    require "BizMathLegacy"
+end
+
 local P = {}
 DisplayRNGValues = P
 
@@ -35,8 +53,9 @@ P.Tumblers = {
 P.advance_tumbler = function(__tumblers, __index, __seed)
     local a = __tumblers[__index].A
     local b = __tumblers[__index].B
-    local result = (
-        0xffffffff & P.mul32(__seed, a).lo + b
+    local result = BizMath.band(
+        0xffffffff,
+        P.mul32(__seed, a).lo + b
     )
     return result
 end
@@ -46,9 +65,9 @@ P.seed_index = function(__target_seed, __tumblers)
     local temp = 0x00000000
     -- Unlock tumblers 1 through 8
     for i=1,8 do
-        local mask = (1 << 4 * i) - 1
-        local step_size = (1 << 4 * (i - 1))
-        while (temp & mask) ~= (__target_seed & mask) do
+        local mask = BizMath.lshift(1, 4 * i) - 1
+        local step_size = BizMath.lshift(1, 4 * (i - 1))
+        while BizMath.band(temp, mask) ~= BizMath.band(__target_seed, mask) do
             temp = P.advance_tumbler(__tumblers, i, temp)
             result = result + step_size
         end
@@ -58,14 +77,15 @@ end
 
 P.mul32 = function(__a, __b)
     -- Split a and b into their high and low bytes
-    local a0 = (__a >> 0x10)
-    local a1 = (__a & 0xffff)
-    local b0 = (__b >> 0x10)
-    local b1 = (__b & 0xffff)
+    local a0 = BizMath.rshift(__a, 0x10)
+    local a1 = BizMath.band(__a, 0xffff)
+    local b0 = BizMath.rshift(__b, 0x10)
+    local b1 = BizMath.band(__b, 0xffff)
     -- Use FOIL to stay within Lua number precision bounds
     local temp = a0 * b1 + a1 * b0
-    local lo = a1 * b1 + ((temp & 0xffff) << 0x10)
-    local hi = a0 * b0 + (temp << 0x10)
+    local lo = a1 * b1 + BizMath.lshift(BizMath.band(temp, 0xffff), 0x10)
+    -- TODO(sestren): Verify if hi equation should use rshift or lshift
+    local hi = a0 * b0 + BizMath.lshift(temp, 0x10)
     -- Output the low and high 32-bit halves of the product separately
     local result = {hi = hi, lo = lo}
     return result
@@ -120,7 +140,10 @@ P.draw = function()
     P.canvas.Clear(0xff000000)
     P.text(5, 0, "seed      rng  index    delta", 0xff999999, 0xff000000)
     -- Show nice RNG info
-    local nice_rng = (0xff & (P.nice_seed >> 0x18))
+    local nice_rng = BizMath.band(
+        0xff,
+        BizMath.rshift(P.nice_seed, 0x18)
+    )
     local nice_delta = P.nice_index - P.prev_nice_index
     if nice_delta > 0 then
         nice_delta = "+"..nice_delta
@@ -133,7 +156,10 @@ P.draw = function()
     P.text(19, 1, P.nice_index)
     P.text(28, 1, nice_delta, 0xff9999ff)
     -- Show evil RNG info
-    local evil_rng = (0x7fff & (P.evil_seed >> 0x11))
+    local evil_rng = BizMath.band(
+        0x7fff,
+        BizMath.rshift(P.evil_seed, 0x11)
+    )
     local evil_delta = P.evil_index - P.prev_evil_index
     if evil_delta > 0 then
         evil_delta = "+"..evil_delta
@@ -145,29 +171,6 @@ P.draw = function()
     P.text(14, 2, P.hex(evil_rng, 4))
     P.text(19, 2, P.evil_index)
     P.text(28, 2, evil_delta, 0xff9999ff)
-    -- Spittlebone RNG
-    local msg = ""
-    local nice_seed = P.nice_seed
-    local bad_count = 0
-    for i=1,61 do
-        nice_seed = P.advance_tumbler(P.Tumblers.NiceSeed, 1, nice_seed)
-        nice_rng = (0x1f & (nice_seed >> 0x18))
-        if nice_rng == 0 then
-            msg = msg.."|"
-            bad_count = bad_count + 1
-        else
-            msg = msg.."."
-        end
-    end
-    local color = 0xff00ff00
-    if bad_count > 2 then
-        color = 0xffff0000
-    elseif bad_count == 2 then
-        color = 0xffff9900
-    elseif bad_count == 1 then
-        color = 0xffffff00
-    end
-    P.text(0, 5, "spittlebone: "..msg, color, 0xff000000)
     P.canvas.Refresh()
 end
 
@@ -201,8 +204,8 @@ P.nice_seed = 0
 P.evil_seed = 0
 P.nice_index = 0
 P.evil_index = 0
-P.canvas_width = 570
-P.canvas_height = 84
+P.canvas_width = 320
+P.canvas_height = 56
 P.canvas = gui.createcanvas(P.canvas_width, P.canvas_height, 4, 4)
 P.canvas.SetTitle("DisplayRNGValues")
 
