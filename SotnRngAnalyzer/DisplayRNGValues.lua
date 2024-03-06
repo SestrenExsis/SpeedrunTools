@@ -21,8 +21,10 @@ local P = {}
 DisplayRNGValues = P
 
 P.Addresses = {
-    EvilSeed = 0x009010,
-    NiceSeed = 0x0978B8,
+    PlaystationEvilSeed = 0x009010,
+    PlaystationNiceSeed = 0x0978B8,
+    SaturnEvilSeed = 0x0482B8,
+    SaturnNiceSeed = 0x05D748,
 }
 
 -- Tumblers is used in conjunction with advance_tumbler() and seed_index() 
@@ -50,6 +52,45 @@ P.Tumblers = {
     }
 }
 
+P.read_nice_seed = function()
+    local result = nil
+    local systemid = emu.getsystemid()
+    if systemid == 'PSX' then
+        result = P.read_u32(P.Addresses.PlaystationNiceSeed)
+    elseif systemid == 'SAT' then
+        local a = mainmemory.read_u16_le(P.Addresses.SaturnNiceSeed)
+        local b = mainmemory.read_u16_le(P.Addresses.SaturnNiceSeed + 2)
+        result = BizMath.bor(BizMath.lshift(a, 0x10), b)
+    end
+    return result
+end
+
+P.read_evil_seed = function()
+    local result = nil
+    local systemid = emu.getsystemid()
+    if systemid == 'PSX' then
+        result = P.read_u32(P.Addresses.PlaystationEvilSeed)
+    elseif systemid == 'SAT' then
+        local a = mainmemory.read_u16_le(P.Addresses.SaturnEvilSeed)
+        local b = mainmemory.read_u16_le(P.Addresses.SaturnEvilSeed + 2)
+        result = BizMath.bor(BizMath.lshift(a, 0x10), b)
+    end
+    return result
+end
+
+P.read_u32 = function(__address)
+    local result = nil
+    local systemid = emu.getsystemid()
+    if systemid == 'PSX' then
+        result = mainmemory.read_u32_le(__address)
+    elseif systemid == 'SAT' then
+        local a = mainmemory.read_u16_le(__address)
+        local b = mainmemory.read_u16_le(__address + 2)
+        result = BizMath.bor(BizMath.lshift(a, 0x10), b)
+    end
+    return result
+end
+
 P.advance_tumbler = function(__tumblers, __index, __seed)
     local a = __tumblers[__index].A
     local b = __tumblers[__index].B
@@ -63,6 +104,9 @@ end
 P.seed_index = function(__target_seed, __tumblers)
     local result = 0
     local temp = 0x00000000
+    if emu.getsystemid() == 'SAT' then
+        temp = 0x00000001
+    end
     -- Unlock tumblers 1 through 8
     for i=1,8 do
         local mask = BizMath.lshift(1, 4 * i) - 1
@@ -119,7 +163,7 @@ P.set_nice_rng_index = function(__index)
 end
 
 P.increment_nice_rng = function()
-    local nice_seed = mainmemory.read_u32_le(P.Addresses.NiceSeed)
+    local nice_seed = P.read_u32(P.Addresses.NiceSeed)
     local nice_index = P.seed_index(nice_seed, P.Tumblers.NiceSeed)
     if nice_index < 0xffffffff then
         nice_index = nice_index + 1
@@ -128,7 +172,7 @@ P.increment_nice_rng = function()
 end
 
 P.decrement_nice_rng = function()
-    local nice_seed = mainmemory.read_u32_le(P.Addresses.NiceSeed)
+    local nice_seed = P.read_u32(P.Addresses.NiceSeed)
     local nice_index = P.seed_index(nice_seed, P.Tumblers.NiceSeed)
     if nice_index > 0 then
         nice_index = (nice_index - 1) % 0xffffffff
@@ -175,21 +219,22 @@ P.draw = function()
 end
 
 P.update = function()
-    local x = P.canvas.GetMouseX()
-    local y = P.canvas.GetMouseY()
-    if x >= 0 and x < P.canvas_width then
-        if y >= 0 and y < P.canvas_height then
-            if input.getmouse().Left then
-                P.decrement_nice_rng()
-            elseif input.getmouse().Right then
-                P.increment_nice_rng()
-            end
-        end
-    end
+    -- TODO(sestren): Figure out how to handle the canvas going away
+    -- local x = P.canvas.GetMouseX()
+    -- local y = P.canvas.GetMouseY()
+    -- if x >= 0 and x < P.canvas_width then
+    --     if y >= 0 and y < P.canvas_height then
+    --         if input.getmouse().Left then
+    --             P.decrement_nice_rng()
+    --         elseif input.getmouse().Right then
+    --             P.increment_nice_rng()
+    --         end
+    --     end
+    -- end
     P.prev_nice_index = P.nice_index
     P.prev_evil_index = P.evil_index
-    P.nice_seed = mainmemory.read_u32_le(P.Addresses.NiceSeed)
-    P.evil_seed = mainmemory.read_u32_le(P.Addresses.EvilSeed)
+    P.nice_seed = P.read_nice_seed()
+    P.evil_seed = P.read_evil_seed()
     P.nice_index = P.seed_index(P.nice_seed, P.Tumblers.NiceSeed)
     P.evil_index = P.seed_index(P.evil_seed, P.Tumblers.EvilSeed)
 end
@@ -198,15 +243,16 @@ event.unregisterbyname("DisplayRNGValues__update")
 event.onframeend(P.update, "DisplayRNGValues__update")
 
 gui.defaultBackground(0xffff0000)
+P.scale = 1
 P.prev_nice_index = 0
 P.prev_evil_index = 0
 P.nice_seed = 0
 P.evil_seed = 0
 P.nice_index = 0
 P.evil_index = 0
-P.canvas_width = 320
-P.canvas_height = 56
-P.canvas = gui.createcanvas(P.canvas_width, P.canvas_height, 4, 4)
+P.canvas_width = P.scale * 320
+P.canvas_height = P.scale * 56
+P.canvas = gui.createcanvas(P.canvas_width, P.canvas_height, P.scale * 4, P.scale * 4)
 P.canvas.SetTitle("DisplayRNGValues")
 
 P.update()
