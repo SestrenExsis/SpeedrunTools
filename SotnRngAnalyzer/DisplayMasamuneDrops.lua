@@ -1,122 +1,8 @@
 
-local function getVersion()
-    local version = "legacy"
-    if client ~= nil and client.getversion ~= nil then
-        version = client.getversion()
-    end
-    -- TODO(sestren): Remove patch version in a more sensible way
-    if version == "2.9.1" then
-        version = "2.9"
-    end
-    return version
-end
-
-if getVersion() == "2.9" then
-    require "BizMath29"
-else
-    require "BizMathLegacy"
-end
+require "SotnCore"
 
 local P = {}
 DisplayRNGValues = P
-
-P.Addresses = {
-    PlaystationEvilSeed = 0x009010,
-    SaturnEvilSeed = 0x0482B8,
-}
-
--- Tumblers is used in conjunction with advance_tumbler() and seed_index() 
--- to decode the seed index based on a given nice or evil seed
-P.Tumblers = {
-    EvilSeed = { -- rand()
-        { A = 0x41c64e6d, B = 0x00003039 }, -- 1
-        { A = 0x5f748241, B = 0x65136930 }, -- 2
-        { A = 0xbe67a401, B = 0x1ef73300 }, -- 3
-        { A = 0x65fa4001, B = 0xb8133000 }, -- 4
-        { A = 0xdfa40001, B = 0x21330000 }, -- 5
-        { A = 0xfa400001, B = 0x13300000 }, -- 6
-        { A = 0xa4000001, B = 0x33000000 }, -- 7
-        { A = 0x40000001, B = 0x30000000 }, -- 8
-    }
-}
-
-P.read_evil_seed = function()
-    local result = nil
-    local systemid = emu.getsystemid()
-    if systemid == 'PSX' then
-        result = P.read_u32(P.Addresses.PlaystationEvilSeed)
-    elseif systemid == 'SAT' then
-        local a = mainmemory.read_u16_le(P.Addresses.SaturnEvilSeed)
-        local b = mainmemory.read_u16_le(P.Addresses.SaturnEvilSeed + 2)
-        result = BizMath.bor(BizMath.lshift(a, 0x10), b)
-    end
-    return result
-end
-
-P.read_u32 = function(__address)
-    local result = nil
-    local systemid = emu.getsystemid()
-    if systemid == 'PSX' then
-        result = mainmemory.read_u32_le(__address)
-    elseif systemid == 'SAT' then
-        local a = mainmemory.read_u16_le(__address)
-        local b = mainmemory.read_u16_le(__address + 2)
-        result = BizMath.bor(BizMath.lshift(a, 0x10), b)
-    end
-    return result
-end
-
-P.advance_tumbler = function(__tumblers, __index, __seed)
-    local a = __tumblers[__index].A
-    local b = __tumblers[__index].B
-    local result = BizMath.band(
-        0xffffffff,
-        P.mul32(__seed, a).lo + b
-    )
-    return result
-end
-
-P.seed_index = function(__target_seed, __tumblers)
-    local result = 0
-    local temp = 0x00000000
-    if emu.getsystemid() == 'SAT' then
-        temp = 0x00000001
-    end
-    -- Unlock tumblers 1 through 8
-    for i=1,8 do
-        local mask = BizMath.lshift(1, 4 * i) - 1
-        local step_size = BizMath.lshift(1, 4 * (i - 1))
-        while BizMath.band(temp, mask) ~= BizMath.band(__target_seed, mask) do
-            temp = P.advance_tumbler(__tumblers, i, temp)
-            result = result + step_size
-        end
-    end
-    return result
-end
-
-P.mul32 = function(__a, __b)
-    -- Split a and b into their high and low bytes
-    local a0 = BizMath.rshift(__a, 0x10)
-    local a1 = BizMath.band(__a, 0xffff)
-    local b0 = BizMath.rshift(__b, 0x10)
-    local b1 = BizMath.band(__b, 0xffff)
-    -- Use FOIL to stay within Lua number precision bounds
-    local temp = a0 * b1 + a1 * b0
-    local lo = a1 * b1 + BizMath.lshift(BizMath.band(temp, 0xffff), 0x10)
-    -- TODO(sestren): Verify if hi equation should use rshift or lshift
-    local hi = a0 * b0 + BizMath.lshift(temp, 0x10)
-    -- Output the low and high 32-bit halves of the product separately
-    local result = {hi = hi, lo = lo}
-    return result
-end
-
-P.hex = function(__number, __digits)
-    local result = bizstring.hex(__number)
-    while #result < __digits do
-        result = '0'..result
-    end
-    return result
-end
 
 P.text = function(__col, __row, __message, __color)
     local font_height = P.scale * 12
@@ -147,7 +33,7 @@ P.draw = function()
     -- Show evil RNG info
     local evil_rng = BizMath.band(
         0x7fff,
-        BizMath.rshift(P.evil_seed, 0x11)
+        BizMath.rshift(P.evil_seed, 0x10)
     )
     local evil_delta_str = P.evil_delta
     if evil_delta_str > 0 then
@@ -156,7 +42,7 @@ P.draw = function()
         evil_delta_str = " -"
     end
     P.text(10, 1, "Evil RNG", 0xffff0000)
-    P.text(19, 1, P.hex(P.evil_seed, 8))
+    P.text(19, 1, SotnCore.hex(P.evil_seed, 8))
     P.text(28, 1, P.evil_index)
     P.text(37, 1, evil_delta_str, 0xff9999ff)
     -- Show frames off from Masamune drop for Saturn
@@ -217,14 +103,14 @@ P.draw = function()
 end
 
 P.onframestart = function()
-    P.evil_seed = P.read_evil_seed()
-    P.evil_index = P.seed_index(P.evil_seed, P.Tumblers.EvilSeed)
+    P.evil_seed = SotnCore.read_evil_seed()
+    P.evil_index = SotnCore.evil_seed_index(P.evil_seed)
 end
 
 P.onframeend = function()
     P.prev_evil_index = P.evil_index
-    P.evil_seed = P.read_evil_seed()
-    P.evil_index = P.seed_index(P.evil_seed, P.Tumblers.EvilSeed)
+    P.evil_seed = SotnCore.read_evil_seed()
+    P.evil_index = SotnCore.evil_seed_index(P.evil_seed)
     P.evil_delta = P.evil_index - P.prev_evil_index
 end
 

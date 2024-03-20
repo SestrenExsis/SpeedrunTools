@@ -1,5 +1,5 @@
 
-require "SotnSaturnCore"
+require "SotnCore"
 
 local P = {}
 DrillMasamuneDrop = P
@@ -14,11 +14,11 @@ for offset = P.min_offset, P.max_offset do
     P.trials[offset] = 0
 end
 
-function clear_graphics()
+P.clear_graphics = function()
     gui.clearGraphics()
 end
 
-function draw_text()
+P.draw_text = function()
     gui.pixelText(16, 222, P.trial_message, P.trial_color)
     local color = 0xffffff00
     local x = 175
@@ -46,11 +46,11 @@ end
 
 P.trial = function()
     savestate.load("Drill - Masamune Drop.State")
-    SotnSaturnCore.action("R", "", 1)
-    SotnSaturnCore.action("R", "Jump", 60)
-    SotnSaturnCore.action("R", "", 45)
-    SotnSaturnCore.action("", "", 30)
-    SotnSaturnCore.action("", "Bat", 30)
+    SotnCore.action("R", "", 1)
+    SotnCore.action("R", "Jump", 60)
+    SotnCore.action("R", "", 45)
+    SotnCore.action("", "", 30)
+    SotnCore.action("", "Bat", 30)
     -- Timers
     while true do
         emu.frameadvance()
@@ -68,12 +68,8 @@ P.trial = function()
             break
         end
     end
-    local evil_seed = SotnSaturnCore.read4(SotnSaturnCore.Addresses.EvilSeed)
-    local evil_index = SotnSaturnCore.seed_index(
-        SotnSaturnCore.StartingSeeds.EvilSeed,
-        evil_seed,
-        SotnSaturnCore.Tumblers.EvilSeed
-    )
+    local evil_seed = SotnCore.read_evil_seed()
+    local evil_index = SotnCore.evil_seed_index(evil_seed)
     evil_index = evil_index - 1 -- Wing smash starts 1 frame after letting go of input
     if evil_index < 400 then
         local delta = 400 - evil_index
@@ -111,15 +107,15 @@ P.trial = function()
     if evil_index == 400 or evil_index == 404 then
         timeout = 240
     end
-    SotnSaturnCore.action("", "", timeout)
+    SotnCore.action("", "", timeout)
 end
 
 console.log("drill_masamune_drop")
 
-event.unregisterbyname("clear_graphics")
-event.onframeend(clear_graphics, "clear_graphics")
-event.unregisterbyname("draw_text")
-event.onframeend(draw_text, "draw_text")
+event.unregisterbyname("DrillMasamuneDrop__clear_graphics")
+event.onframeend(P.clear_graphics, "DrillMasamuneDrop__clear_graphics")
+event.unregisterbyname("DrillMasamuneDrop__draw_text")
+event.onframeend(P.draw_text, "DrillMasamuneDrop__draw_text")
 
 while true do
     P.trial()
