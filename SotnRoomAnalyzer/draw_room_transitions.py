@@ -7,7 +7,34 @@ import argparse
 from cv2 import cv2
 import tkinter
 from PIL import Image, ImageTk
-import sotn_run_analyzer as sotn
+
+class VideoFeed():
+    def __init__(self, video_file: str):
+        self.video = cv2.VideoCapture(video_file)
+        self.read_ind, self.raw_frame = self.video.read()
+        # Determine length of video
+        self.video.set(cv2.CAP_PROP_POS_AVI_RATIO, 1.0)
+        self.duration_in_ms = self.video.get(cv2.CAP_PROP_POS_MSEC)
+        self.video.set(cv2.CAP_PROP_POS_AVI_RATIO, 0.0)
+        # )
+        self.position_in_ms = int(self.video.get(cv2.CAP_PROP_POS_MSEC))
+        self.start_in_ms = 0
+        self.end_in_ms = self.duration_in_ms
+        # cap.set(CV_CAP_PROP_BUFFERSIZE, buffer_size_in_frames)
+    
+    def next_frame(self, skip: int=0):
+        for _ in range(skip):
+            self.read_ind = self.video.grab() > 0
+        if skip <= 0:
+            self.read_ind, self.raw_frame = self.video.read()
+        else:
+            self.read_ind, self.raw_frame = self.video.retrieve()
+        self.position_in_ms = int(self.video.get(cv2.CAP_PROP_POS_MSEC))
+        self.raw_frame = cv2.cvtColor(self.raw_frame, cv2.COLOR_BGR2RGB)
+    
+    def set_time(self, time_in_ms: int):
+        self.video.set(cv2.CAP_PROP_POS_MSEC, time_in_ms)
+        self.position_in_ms = int(self.video.get(cv2.CAP_PROP_POS_MSEC))
 
 class TestApp(tkinter.Frame):
     '''
@@ -47,7 +74,7 @@ class TestApp(tkinter.Frame):
         for run_name, (video_file, source_file) in runs.items():
             with open(source_file) as open_file:
                 self.scenes[run_name] = []
-                self.feeds.append((run_name, sotn.VideoFeed(video_file)))
+                self.feeds.append((run_name, VideoFeed(video_file)))
                 for line in open_file.readlines():
                     parts = line.split(', ')
                     start_time_code = parts[0]
@@ -88,10 +115,11 @@ class TestApp(tkinter.Frame):
         x0 = padding['timeline_left'] + 300
         y0 = padding['timeline_top']
         self.canvas.delete('all')
+        MS_PER_SEC = 1000
         self.canvas.create_rectangle(
             x0,
             y0,
-            x0 + (1 * sotn.MS_PER_SEC) / self.scale, # 1-second wide
+            x0 + (1 * MS_PER_SEC) / self.scale, # 1-second wide
             y0 + 52 * len(self.offsets),
             fill='#ff0000',
         )
