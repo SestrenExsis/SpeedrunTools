@@ -40,6 +40,7 @@ Stage = {
     BOSS_CREATURE = 0x3A,
     BOSS_MEDUSA = 0x3B,
     BOSS_DEATH = 0x3C,
+    BOSS_BEELZEBUB = 0x3D,
     CASTLE_ENTRANCE = 0x41,
 }
 
@@ -126,6 +127,7 @@ local morse_code = {
 -- Opening dialogue at roughly 0x801829F0
 
 local injections = {
+    ['nop'] = { instruction = 0x00000000, mask = 0x0000 },
     ['li v0, X'] = { instruction = 0x34020000, mask = 0x7FFF },
     ['li a0, X'] = { instruction = 0x34040000, mask = 0x7FFF },
     ['li a1, X'] = { instruction = 0x34050000, mask = 0x7FFF },
@@ -135,6 +137,8 @@ local injections = {
     ['srl v0, $18'] = { instruction = 0x00021602, mask = 0x0000 },
     ['andi s1, v0, X'] = { instruction = 0x30510000, mask = 0x7FFF },
     ['addiu v0, X'] = { instruction = 0x24420000, mask = 0x7FFF },
+    ['addiu a0, v0, X'] = { instruction = 0x24440000, mask = 0x7FFF },
+    ['addiu a1, a0, X'] = { instruction = 0x24850000, mask = 0x7FFF },
 }
 
 local hooks = {}
@@ -157,11 +161,20 @@ hooks[Stage.CASTLE_ENTRANCE] = { -- 801C184C
     ['Blood Spray - Unknown'] = { address = 0x801CC1CC, default = 0x30420007, injection = 'li v0, X', mask = 0x07 },
     ['Warg Explosion - X Position'] = { address = 0x801D0080, default = 0x3042000F, injection = 'li v0, X', mask = 0x0F },
     ['Warg Explosion - Y Position'] = { address = 0x801D009C, default = 0x30420007, injection = 'li v0, X', mask = 0x07 },
+    -- TODO: Warg explosion hook is different when attacking from the right
     ['Zombie - Unknown 1'] = { address = 0x801D65C8, default = 0x30420001, injection = 'li v0, X', mask = 0x01 },
-    ['Zombie - Spawn Distance'] = { address = 0x801D67B8, default = 0x3042003F, injection = 'li v0, X', mask = 0x3F },
-    ['Zombie - Spawn Delay'] = { address = 0x801D685C, default = 0x3042003F, injection = 'li v0, X', mask = 0x3F },
+    ['Zombie Spawner - Delay Start'] = { address = 0x801D6860, default = 0x24420020, injection = 'addiu v0, X', mask = 0x7FFF },
+    ['Zombie Spawner - Delay Range'] = { address = 0x801D685C, default = 0x3042003F, injection = 'li v0, X', mask = 0x3F },
+    ['Zombie Spawner - Distance Start'] = { address = 0x801D67C8, default = 0x24440060, injection = 'addiu a0, v0, X', mask = 0x7FFF },
+    ['Zombie Spawner - Distance Range'] = { address = 0x801D67B8, default = 0x3042003F, injection = 'li v0, X', mask = 0x3F },
+    ['Zombie Spawner - Distance Behind'] = { address = 0x801D67E0, default = 0x00441023, injection = 'li v0, X', mask = 0x00 },
     ['Zombie - Palette 1'] = { address = 0x801D65B8, default = 0x24420001, injection = 'li v0, X', mask = 0x1 },
     ['Zombie - Palette 2'] = { address = 0x801D65DC, default = 0x24420001, injection = 'li v0, X', mask = 0x1 },
+    ['Zombie - Rise 1'] = { address = 0x801D6664, default = 0x2442FFFE, injection = 'subiu v0, X', mask = 0x7FFF },
+    ['Zombie - Rise 2'] = { address = 0x801D6668, default = 0x24630002, injection = 'addiu v1, X', mask = 0x7FFF },
+    ['Zombie - Autoside'] = { address = 0x801D67C4, default = 0x10600004, injection = 'nop', mask = 0x00 },
+    ['Zombie - Autokill'] = { address = 0x801D66BC, default = 0x1040000E, injection = 'nop', mask = 0x00 },
+    ['Zombie - Max Count'] = { address = 0x801D6794, default = 0x248505E0, injection = 'addiu a1, a0, X', mask = 0x7FFF },
 }
 hooks[Stage.CASTLE_ENTRANCE_2] = { -- jal 801B90BC, search for 0C06E42F
     ['Stage Nice RNG'] = { address = 0x801B90E8, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
@@ -572,10 +585,14 @@ hooks[Stage.REVERSE_CAVERNS] = { -- jal 801CA1E4, search for 0C072879
 hooks[Stage.REVERSE_ENTRANCE] = { -- jal 801B3EB0, search for 0C06CFAC
     ['Stage Nice RNG'] = { address = 0x801B3EDC, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
+hooks[Stage.BOSS_BEELZEBUB] = { -- jal 80195144, search for 0C0xxxxx
+    ['Stage Nice RNG'] = { address = 0x80195170, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
+}
 -- [800978B8]!!?
 hooks[Stage.BOSS_CREATURE] = { -- jal 8019xxxx, search for 0C06xxxx
     ['Stage Nice RNG'] = { address = 0x80198E38, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
+-- search for 00021602 in Bizhawk
 -- Reverse Warp Room
 -- Cutscene: Castle Entrance w/ Death
 -- Boss: Akmodan II
@@ -606,6 +623,8 @@ end
 -- local prev_room_id = 
 local variables = {}
 variables['random'] = 0x00
+variables['perimeter_x'] = 0x00
+variables['perimeter_y'] = 0x00
 variables['rectangle_x'] = 0x00
 variables['rectangle_y'] = 0x00
 variables['morse_code'] = 0x00
@@ -640,14 +659,19 @@ stage_sources[Stage.CASTLE_ENTRANCE] = {
     ['Blood Spray - Timer'] = { type = 'fixed', param1 = 0x38 },
     ['Blood Spray - Speed'] = { type = 'mask', param1 = 0x3F },
     ['Blood Spray - Unknown'] = { type = 'mask', param1 = 0x0F },
-    ['Warg Explosion - X Position'] = { type = 'variable', param1 = 'rectangle_x' },
-    ['Warg Explosion - Y Position'] = { type = 'variable', param1 = 'rectangle_y' },
+    -- ['Warg Explosion - X Position'] = { type = 'variable', param1 = 'rectangle_x' },
+    -- ['Warg Explosion - Y Position'] = { type = 'variable', param1 = 'rectangle_y' },
     -- ['Zombie - Unknown 1'] = { type = 'fixed', param1 = 0x01 },
-    ['Zombie - Spawn Distance'] = { type = 'fixed', param1 = 0x1F },
-    ['Zombie - Spawn Delay'] = { type = 'random', param1 = 0x0F },
+    ['Zombie Spawner - Delay Start'] = { type = 'fixed', param1 = 0x6 },
+    ['Zombie Spawner - Delay Range'] = { type = 'fixed', param1 = 0x0 },
+    ['Zombie Spawner - Distance Start'] = { type = 'fixed', param1 = 0x0B0 },
+    ['Zombie Spawner - Distance Range'] = { type = 'fixed', param1 = 0x00 },
+    ['Zombie Spawner - Distance Behind'] = { type = 'fixed', param1 = 0x70 },
     -- ['Zombie - Palette 1'] = { type = 'fixed', param1 = 0x00 },
-    ['Zombie - Palette 2'] = { type = 'fixed', param1 = 0x08 },
-    -- IDEA: No Zombie spawns, but guaranteed Stairmaster
+    -- ['Zombie - Palette 2'] = { type = 'fixed', param1 = 0x08 },
+    -- ['Zombie - Autoside'] = { type = 'fixed', param1 = 0x00 },
+    ['Zombie - Autokill'] = { type = 'fixed', param1 = 0x00 },
+    ['Zombie - Max Count'] = { type = 'fixed', param1 = 0x1028 },
 }
 stage_sources[Stage.ALCHEMY_LABORATORY] = {
     ['Stage Nice RNG'] = { type = 'fixed', param1 = 0x01 },
@@ -695,6 +719,13 @@ room_sources[Room.BLOODY_ZOMBIE_HALLWAY] = {
 function curated()
     variables['rectangle_x'] = lerp_rect_16_08[1 + (emu.framecount() % #lerp_rect_16_08)][1]
     variables['rectangle_y'] = lerp_rect_16_08[1 + (emu.framecount() % #lerp_rect_16_08)][2]
+    variables['perimeter_x'] = math.random(0, 0xFF)
+    variables['perimeter_y'] = math.random(0, 0xFF)
+    if math.random() < 0.5 then
+        variables['perimeter_x'] = 0xFF * math.random(0, 1)
+    else
+        variables['perimeter_y'] = 0xFF * math.random(0, 1)
+    end
     variables['morse_code'] = morse_code[1 + (emu.framecount() % #morse_code)]
     variables['book1'] = 0x10
     variables['book2'] = 0x10
@@ -748,6 +779,9 @@ function curated()
                     rng_value = math.random(0x7FFF) & source.param1
                 elseif source.type == 'variable' then
                     rng_value = variables[source.param1]
+                    if source.param2 ~= nil then
+                        rng_value = rng_value & source.param2
+                    end
                 elseif source.type == 'cycle' then
                     rng_value = emu.framecount() % source.param1
                 -- elseif source.type == 'pingpong' then
