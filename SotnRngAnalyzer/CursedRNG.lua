@@ -50,6 +50,7 @@ Room = {
     STAIRMASTERS_DOMAIN = 0x80183CD8,
     BLOODY_ZOMBIE_HALLWAY = 0x80182748,
     ROOM_AFTER_SLOGRA_AND_GAIBON = 0x801827C8,
+    WARG_HALLWAY = 0x80183D10,
 }
 
 function stage_id()
@@ -133,23 +134,39 @@ local injections = {
     ['li a1, X'] = { instruction = 0x34050000, mask = 0x7FFF },
     ['li s0, X'] = { instruction = 0x34100000, mask = 0x7FFF },
     ['li s1, X'] = { instruction = 0x34110000, mask = 0x7FFF },
+    ['slti v0, v0, X'] = { instruction = 0x28420000, mask = 0x7FFF },
     ['slti v0, s1, X'] = { instruction = 0x2A220000, mask = 0x7FFF },
+    ['sll v0, X'] = { instruction = 0x00021000, mask = 0x001F, multiplier = 64 },
     ['srl v0, $18'] = { instruction = 0x00021602, mask = 0x0000 },
     ['andi s1, v0, X'] = { instruction = 0x30510000, mask = 0x7FFF },
     ['addiu v0, X'] = { instruction = 0x24420000, mask = 0x7FFF },
     ['addiu a0, v0, X'] = { instruction = 0x24440000, mask = 0x7FFF },
     ['addiu a1, a0, X'] = { instruction = 0x24850000, mask = 0x7FFF },
+    ['la v0, X'] = { instruction = 0x24850000, mask = 0x7FFF },
+    ['copy'] = { instruction = 0x00000000, mask = 0xFFFFFFFF },
 }
 
 local hooks = {}
-hooks[Stage.PROLOGUE] = { -- 801B186C
+hooks[Stage.PROLOGUE] = { -- jal $801B186C
     ['Stage Nice RNG'] = { address = 0x801B1898, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
     ['Wineglass shard - Speed'] = { address = 0x801AD968, default = 0x3051001F, injection = 'andi s1, v0, X', mask = 0x1F },
     ['Wineglass shard - Angle'] = { address = 0x801AD974, default = 0x00028040, injection = 'li s0, X', mask = 0x1FE },
-    ['Wineglass shard - Amount'] = { address = 0x801ADA68, default = 0x2A220008, injection = 'slti v0, s1, X', mask = 0x00 },
+    ['Wineglass shard - Amount'] = { address = 0x801ADA68, default = 0x2A220008, injection = 'slti v0, s1, X', mask = 0x2F },
 }
-hooks[Stage.CASTLE_ENTRANCE] = { -- 801C184C
+hooks[Stage.CASTLE_ENTRANCE] = { -- jal $801C184C, search for 0C070613
     ['Stage Nice RNG'] = { address = 0x801C1878, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
+    -- ['Merman Ledge - Tile'] = { address = 0x8019D6C8, default = 0x052A052A, injection = 'copy', mask = 0xFFFFFFFF },
+    ['Left-Side Rock - Corner Tile'] = { address = 0x8019D158, default = 0x025E0000, injection = 'copy', mask = 0xFFFFFFFF },
+    ['Left-Side Rock - Item Drop'] = { address = 0x801BA7CC, default = 0x34020043, injection = 'li v0, X', mask = 0x7FFF },
+    ['Left-Side Rock - Particle Count'] = { address = 0x801BA774, default = 0x2A220003, injection = 'slti v0, s1, X', mask = 0x0F },
+    ['Left-Side Rock - Tile Start'] = { address = 0x801BA630, default = 0x24421258, injection = 'addiu v0, X', mask = 0x7FFF },
+    ['Left-Side Rock - Hit Add'] = { address = 0x801BA788, default = 0x24420001, injection = 'addiu v0, X', mask = 0x7FFF },
+    ['Left-Side Rock - Hit Count'] = { address = 0x801BA798, default = 0x28420002, injection = 'slti v0, v0, X', mask = 0x7FFF },
+    ['Left-Side Rock - X Velocity Multiplier'] = { address = 0x801BA73C, default = 0x00021200, injection = 'sll v0, X', mask = 0x1F },
+    ['Left-Side Rock - Y Velocity Multiplier'] = { address = 0x801BA758, default = 0x00021200, injection = 'sll v0, X', mask = 0x1F },
+    ['Stairway Rock - Hit Add'] = { address = 0x801BB038, default = 0x2442001, injection = 'addiu v0, X', mask = 0x7FFF },
+    ['Red Rust Skeleton - Item Drop'] = { address = 0x801D60FC, default = 0x3402001A, injection = 'li v0, X', mask = 0x7FFF },
+    ['Short Sword Skeleton - Item Drop'] = { address = 0x801D6100, default = 0x34020013, injection = 'li v0, X', mask = 0x7FFF },
     ['Lightning - Extra Delay'] = { address = 0x801B7E50, default = 0x3042007F, injection = 'li v0, X', mask = 0x7F },
     ['Lightning - Minimum Delay'] = { address = 0x801B7E58, default = 0x24420040, injection = 'addiu v0, X', mask = 0x7FFF },
     ['Strike - Spark X'] = { address = 0x801C24C8, default = 0x30420007, injection = 'li v0, X', mask = 0x07 },
@@ -176,10 +193,10 @@ hooks[Stage.CASTLE_ENTRANCE] = { -- 801C184C
     ['Zombie - Autokill'] = { address = 0x801D66BC, default = 0x1040000E, injection = 'nop', mask = 0x00 },
     ['Zombie - Max Count'] = { address = 0x801D6794, default = 0x248505E0, injection = 'addiu a1, a0, X', mask = 0x7FFF },
 }
-hooks[Stage.CASTLE_ENTRANCE_2] = { -- jal 801B90BC, search for 0C06E42F
+hooks[Stage.CASTLE_ENTRANCE_2] = { -- jal $801B90BC, search for 0C06E42F
     ['Stage Nice RNG'] = { address = 0x801B90E8, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.ALCHEMY_LABORATORY] = { -- 801B94D4 -- Also Slogra and Gaibon
+hooks[Stage.ALCHEMY_LABORATORY] = { -- jal $801B94D4 -- Also Slogra and Gaibon
     ['Stage Nice RNG'] = { address = 0x801B9500, default = 0x00021602, injection = 'li v0, X', mask = 0x00 },
     ['Green Axe Knight - Attack RNG'] = { address = 0x801C4584, default = 0x30420007, injection = 'li v0, X', mask = 0x07 },
     ['Green Axe Knight - Attack Step'] = { address = 0x801C4590, default = 0x902422B4, injection = 'li a0, X', mask = 0x00 },
@@ -248,10 +265,10 @@ hooks[Stage.MARBLE_GALLERY] = { -- jal $801C3788, search for 0C070DE2
     ['Unknown 1EC904'] = { address = 0x801EC904, default = 0x30510007, injection = 'li s1, X', mask = 0x07 },
     ['Unknown 1ECE44'] = { address = 0x801ECE44, default = 0x30420003, injection = 'li v0, X', mask = 0x03 },
 }
-hooks[Stage.WARP_ROOM] = { -- jal 801881E8, search for 0C06207A
+hooks[Stage.WARP_ROOM] = { -- jal $801881E8, search for 0C06207A
     -- ['Stage Nice RNG'] = { address = 0x80188214, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.OUTER_WALL] = { -- jal 801C19F0, search for 0C07067C
+hooks[Stage.OUTER_WALL] = { -- jal $801C19F0, search for 0C07067C
     ['Stage Nice RNG'] = { address = 0x801C1A1C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
     ['Unknown 1B6340'] = { address = 0x801B6340, default = 0x30420007, injection = 'li v0, X', mask = 0x07 },
     ['Unknown XXXXXX'] = { address = 0x801B636C, default = 0x30420007, injection = 'li v0, X', mask = 0x07 },
@@ -357,16 +374,16 @@ hooks[Stage.BOSS_DOPPELGANGER10] = { -- jal $801B69BC, search for 0C06DA6F
     -- ['Unknown 1C12B8 B'] = { address = 0x801C12B8, default = 0x3042000F, injection = 'li v0, X', mask = 0x0F },
     -- ['Unknown 1C1330 B'] = { address = 0x801C1330, default = 0x30420007, injection = 'li v0, X', mask = 0x07 },
 }
-hooks[Stage.OLROXS_QUARTERS] = { -- jal 801B8714, search for 0C06E1C5
+hooks[Stage.OLROXS_QUARTERS] = { -- jal $801B8714, search for 0C06E1C5
     ['Stage Nice RNG'] = { address = 0x801B8740, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.COLOSSEUM] = { -- jal 801B86D4, search for 0C06E1B5
+hooks[Stage.COLOSSEUM] = { -- jal $801B86D4, search for 0C06E1B5
     ['Stage Nice RNG'] = { address = 0x801B8700, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.BOSS_MINOTAUR_AND_WEREWOLF] = { -- jal 801A7670, search for 0C069D9C
+hooks[Stage.BOSS_MINOTAUR_AND_WEREWOLF] = { -- jal $801A7670, search for 0C069D9C
     ['Stage Nice RNG'] = { address = 0x801A769C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.LONG_LIBRARY] = { -- jal 801BF130, search for 0C06FC4C
+hooks[Stage.LONG_LIBRARY] = { -- jal $801BF130, search for 0C06FC4C
     ['Stage Nice RNG'] = { address = 0x801BF15C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
     -- 0x 801BBBDC 3042007F
     -- 0x 801BBB24 3042003F
@@ -452,71 +469,71 @@ hooks[Stage.LONG_LIBRARY] = { -- jal 801BF130, search for 0C06FC4C
     -- 0x 801EF31C 3042001F
     -- 0x 801EF47C 3042001F
 }
-hooks[Stage.CLOCK_TOWER] = { -- jal 801AC6E0, search for 0C06B1B8 -- Also Karasuman
+hooks[Stage.CLOCK_TOWER] = { -- jal $801AC6E0, search for 0C06B1B8 -- Also Karasuman
     ['Stage Nice RNG'] = { address = 0x801AC70C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.CASTLE_KEEP] = { -- jal 801AD630, search for 0C06B58C
+hooks[Stage.CASTLE_KEEP] = { -- jal $801AD630, search for 0C06B58C
     ['Stage Nice RNG'] = { address = 0x801AD65C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.ROYAL_CHAPEL] = { -- jal 801C5F88, search for 0C0717E2
+hooks[Stage.ROYAL_CHAPEL] = { -- jal $801C5F88, search for 0C0717E2
     ['Stage Nice RNG'] = { address = 0x801C5FB4, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.BOSS_HIPPOGRYPH] = { -- jal 801A6BB4, search for 0C069AED
+hooks[Stage.BOSS_HIPPOGRYPH] = { -- jal $801A6BB4, search for 0C069AED
     ['Stage Nice RNG'] = { address = 0x801A6BE0, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.UNDERGROUND_CAVERNS] = { -- jal 801CA5F0, search for 0C07297C
+hooks[Stage.UNDERGROUND_CAVERNS] = { -- jal $801CA5F0, search for 0C07297C
     ['Stage Nice RNG'] = { address = 0x801CA61C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.BOSS_SCYLLA] = { -- jal 801A6704, search for 0C0699C1
+hooks[Stage.BOSS_SCYLLA] = { -- jal $801A6704, search for 0C0699C1
     ['Stage Nice RNG'] = { address = 0x801A6730, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.BOSS_SUCCUBUS] = { -- jal 80196F90, search for 0C065BE4
+hooks[Stage.BOSS_SUCCUBUS] = { -- jal $80196F90, search for 0C065BE4
     ['Stage Nice RNG'] = { address = 0x80196FBC, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.ABANDONED_MINE] = { -- jal 8019DE74, search for 0C06779D
+hooks[Stage.ABANDONED_MINE] = { -- jal $8019DE74, search for 0C06779D
     ['Stage Nice RNG'] = { address = 0x8019DE9C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.BOSS_CERBERUS] = { -- jal 80196648, search for 0C065992
+hooks[Stage.BOSS_CERBERUS] = { -- jal $80196648, search for 0C065992
     ['Stage Nice RNG'] = { address = 0x80196674, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.CATACOMBS] = { -- jal 801BB6A4, search for 0C06EDA9
+hooks[Stage.CATACOMBS] = { -- jal $801BB6A4, search for 0C06EDA9
     ['Stage Nice RNG'] = { address = 0x801BB6D0, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.BOSS_GRANFALOON] = { -- jal 801A55A0, search for 0C069568
+hooks[Stage.BOSS_GRANFALOON] = { -- jal $801A55A0, search for 0C069568
     ['Stage Nice RNG'] = { address = 0x801A55CC, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.CASTLE_CENTER] = { -- jal 80190C4C ???, search for ???
+hooks[Stage.CASTLE_CENTER] = { -- jal $80190C4C ???, search for ???
     ['Stage Nice RNG'] = { address = 0x80190E78, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.BOSS_RICHTER] = { -- jal 801A9B54, search for 0C06A6D5
+hooks[Stage.BOSS_RICHTER] = { -- jal $801A9B54, search for 0C06A6D5
     ['Stage Nice RNG'] = { address = 0x801A9B80, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.REVERSE_KEEP] = { -- jal 801A24F4, search for 0C06893D
+hooks[Stage.REVERSE_KEEP] = { -- jal $801A24F4, search for 0C06893D
     ['Stage Nice RNG'] = { address = 0x801A2520, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.REVERSE_CLOCK_TOWER] = { -- jal 801ACEA0, search for 0C06B3A8
+hooks[Stage.REVERSE_CLOCK_TOWER] = { -- jal $801ACEA0, search for 0C06B3A8
     -- Also Darkwing Bat
     ['Stage Nice RNG'] = { address = 0x801ACECC, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.REVERSE_OUTER_WALL] = { -- jal 801A9C9C, search for 0C06A727
+hooks[Stage.REVERSE_OUTER_WALL] = { -- jal $801A9C9C, search for 0C06A727
     ['Stage Nice RNG'] = { address = 0x801A9CC8, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.FORBIDDEN_LIBRARY] = { -- jal 801A2B60, search for 0C068AD8
+hooks[Stage.FORBIDDEN_LIBRARY] = { -- jal $801A2B60, search for 0C068AD8
     ['Stage Nice RNG'] = { address = 0x801A2B8C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.ANTI_CHAPEL] = { -- jal 801B462C, search for 0C06D18B
+hooks[Stage.ANTI_CHAPEL] = { -- jal $801B462C, search for 0C06D18B
     ['Stage Nice RNG'] = { address = 0x801B4658, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.BOSS_MEDUSA] = { -- jal 80193198, search for 0C064C66
+hooks[Stage.BOSS_MEDUSA] = { -- jal $80193198, search for 0C064C66
     ['Stage Nice RNG'] = { address = 0x801931C4, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.DEATH_WINGS_LAIR] = { -- jal 801B6CF0, search for 0C06DB3C
+hooks[Stage.DEATH_WINGS_LAIR] = { -- jal $801B6CF0, search for 0C06DB3C
     ['Stage Nice RNG'] = { address = 0x801B6D1C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.REVERSE_COLOSSEUM] = { -- jal 801A6B40, search for 0C069AD0
+hooks[Stage.REVERSE_COLOSSEUM] = { -- jal $801A6B40, search for 0C069AD0
     ['Stage Nice RNG'] = { address = 0x801A6B6C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.BLACK_MARBLE_GALLERY] = { -- jal 801B7324, search for 0C06DCC9
+hooks[Stage.BLACK_MARBLE_GALLERY] = { -- jal $801B7324, search for 0C06DCC9
     ['Stage Nice RNG'] = { address = 0x801B7350, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
     -- 1B7FA0 30420007
     -- 1B7FC8 30420007
@@ -567,29 +584,29 @@ hooks[Stage.BLACK_MARBLE_GALLERY] = { -- jal 801B7324, search for 0C06DCC9
     -- 1D051C 3042001F
     -- 1D2858 3042000F
 }
-hooks[Stage.NECROMANCY_LABORATORY] = { -- jal 801ACC04, search for 0C06B301
+hooks[Stage.NECROMANCY_LABORATORY] = { -- jal $801ACC04, search for 0C06B301
     ['Stage Nice RNG'] = { address = 0x801ACC30, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.CAVE] = { -- jal 8019ABF4, search for 0C066AFD
+hooks[Stage.CAVE] = { -- jal $8019ABF4, search for 0C066AFD
     ['Stage Nice RNG'] = { address = 0x8019AC20, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.BOSS_DEATH] = { -- jal 801A1A80, search for 0C0686A0
+hooks[Stage.BOSS_DEATH] = { -- jal $801A1A80, search for 0C0686A0
     ['Stage Nice RNG'] = { address = 0x801A1AAC, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.FLOATING_CATACOMBS] = { -- jal 801B3F50, search for 0C06CFD4
+hooks[Stage.FLOATING_CATACOMBS] = { -- jal $801B3F50, search for 0C06CFD4
     ['Stage Nice RNG'] = { address = 0x801B3F7C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.REVERSE_CAVERNS] = { -- jal 801CA1E4, search for 0C072879
+hooks[Stage.REVERSE_CAVERNS] = { -- jal $801CA1E4, search for 0C072879
     ['Stage Nice RNG'] = { address = 0x801CA210, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.REVERSE_ENTRANCE] = { -- jal 801B3EB0, search for 0C06CFAC
+hooks[Stage.REVERSE_ENTRANCE] = { -- jal $801B3EB0, search for 0C06CFAC
     ['Stage Nice RNG'] = { address = 0x801B3EDC, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
-hooks[Stage.BOSS_BEELZEBUB] = { -- jal 80195144, search for 0C0xxxxx
+hooks[Stage.BOSS_BEELZEBUB] = { -- jal $80195144, search for 0C0xxxxx
     ['Stage Nice RNG'] = { address = 0x80195170, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
 -- [800978B8]!!?
-hooks[Stage.BOSS_CREATURE] = { -- jal 8019xxxx, search for 0C06xxxx
+hooks[Stage.BOSS_CREATURE] = { -- jal $8019xxxx, search for 0C06xxxx
     ['Stage Nice RNG'] = { address = 0x80198E38, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
 -- search for 00021602 in Bizhawk
@@ -638,6 +655,8 @@ local lerp_rect_16_08 = rect_shape(16, 8)
     -- pulse_04
     -- room: changes to a random value at the start of each room
 
+-- 801BA4C0
+-- 801BA774 slti v0,s1,$3
 
 -- Curated
 -- local stage_hooks[][]
@@ -650,17 +669,27 @@ local stage_sources = {}
 stage_sources[Stage.PROLOGUE] = {
     ['Stage Nice RNG'] = { type = 'vanilla' },
     ['Wineglass shard - Speed'] = { type = 'fixed', param1 = 0xFF },
-    ['Wineglass shard - Amount'] = { type = 'fixed', param1 = 0x1F },
+    ['Wineglass shard - Amount'] = { type = 'fixed', param1 = 0x2F },
 }
 stage_sources[Stage.CASTLE_ENTRANCE] = {
     ['Stage Nice RNG'] = { type = 'vanilla' },
-    -- ['Stage Nice RNG'] = { type = 'fixed', param1 = 0x01 },
+    -- ['Stage Nice RNG'] = { type = 'fixed', param1 = 0x00 },
     -- ['Stage Nice RNG'] = { type = 'random', param1 = 0xFF },
+    -- ['Left-Side Rock - Particle Count'] = { type = 'fixed', param1 = 0x07},
+    ['Left-Side Rock - Corner Tile'] = { type = 'fixed', param1 = 0x02970000 },
+    -- ['Merman Ledge - Tile'] = { type = 'random', param1 = 0xFFFF }, -- 0x4283
+    ['Left-Side Rock - Tile Start'] = { type = 'fixed', param1 = 0x1258 - (25 * 0xC) },
+    -- ['Left-Side Rock - Hit Add'] = { type = 'fixed', param1 = 0x1 },
+    ['Left-Side Rock - Hit Count'] = { type = 'fixed', param1 = 0x20 },
+    ['Left-Side Rock - X Velocity Multiplier'] = { type = 'fixed', param1 = 0x0A },
+    ['Left-Side Rock - Y Velocity Multiplier'] = { type = 'fixed', param1 = 0x0A },
+    ['Left-Side Rock - Item Drop'] = { type = 'fixed', param1 = 0x44},
+    ['Stairway Rock - Hit Add'] = { type = 'fixed', param1 = 0x0 },
+    ['Red Rust Skeleton - Item Drop'] = { type = 'fixed', param1 = 0x7B },
+    ['Short Sword Skeleton - Item Drop'] = { type = 'fixed', param1 = 0x10 },
     ['Blood Spray - Timer'] = { type = 'fixed', param1 = 0x38 },
     ['Blood Spray - Speed'] = { type = 'mask', param1 = 0x3F },
     ['Blood Spray - Unknown'] = { type = 'mask', param1 = 0x0F },
-    -- ['Warg Explosion - X Position'] = { type = 'variable', param1 = 'rectangle_x' },
-    -- ['Warg Explosion - Y Position'] = { type = 'variable', param1 = 'rectangle_y' },
     -- ['Zombie - Unknown 1'] = { type = 'fixed', param1 = 0x01 },
     ['Zombie Spawner - Delay Start'] = { type = 'fixed', param1 = 0x6 },
     ['Zombie Spawner - Delay Range'] = { type = 'fixed', param1 = 0x0 },
@@ -708,13 +737,20 @@ room_sources[Room.STAIRMASTERS_DOMAIN] = {
     ['Lightning - Extra Delay'] = { type = 'random', param1 = 0xFF },
     ['Lightning - Minimum Delay'] = { type = 'fixed', param1 = 0x80 },
 }
+room_sources[Room.WARG_HALLWAY] = {
+    ['Warg Explosion - X Position'] = { type = 'variable', param1 = 'rectangle_x' },
+    ['Warg Explosion - Y Position'] = { type = 'variable', param1 = 'rectangle_y' },
+}
 room_sources[Room.BLOODY_ZOMBIE_HALLWAY] = {
     ['Bloody Zombie'] = { stage = Stage.ALCHEMY_LABORATORY, type = 'variable', param1 = 'morse_code' },
 }
--- IDEA: Each zone has one or more puzzles you have to solve the first time you are there
--- IDEA: Alucard will say 'What!?' when you have solved the puzzle for that zone
--- IDEA: Until the zone's puzzle has been solved, you can't leave through the red doors
--- IDEA: Doors turn green or blue (?) when they are open
+-- IDEA: Each zone begins with its RNG cursed in some way
+-- IDEA: Certain actions will bless the RNG, eventually bringing it back to normal
+-- IDEA: Alucard will say 'What!?' each time you find out how to bless the RNG
+-- RNG states:
+-- * Cursed (can produce illegal outcomes)
+-- * Tamed (disobeys vanilla RNG, but does not produce illegal outcomes)
+-- * Blessed (obeys vanilla RNG)
 
 function curated()
     variables['rectangle_x'] = lerp_rect_16_08[1 + (emu.framecount() % #lerp_rect_16_08)][1]
@@ -790,8 +826,11 @@ function curated()
 
                 --     end
                 end
-                local mask = injections[hook.injection].mask
-                injected_value = instruction | (rng_value & mask)
+                rng_value = rng_value & injections[hook.injection].mask
+                if injections[hook.injection].multiplier ~= nil then
+                    rng_value = rng_value * injections[hook.injection].multiplier
+                end
+                injected_value = instruction | rng_value
             end
             -- Write the injected value at the hook's address
             mainmemory.write_u32_le(hook.address - 0x80000000, injected_value)
