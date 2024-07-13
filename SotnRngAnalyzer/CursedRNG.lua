@@ -23,6 +23,7 @@ Stage = {
     BOSS_SCYLLA = 0x1B,
     BOSS_MINOTAUR_AND_WEREWOLF = 0x1C,
     BOSS_GRANFALOON = 0x1D,
+    BOSS_OLROX = 0x1E,
     PROLOGUE = 0x1F,
     BLACK_MARBLE_GALLERY = 0x20,
     REVERSE_OUTER_WALL = 0x21,
@@ -37,10 +38,16 @@ Stage = {
     REVERSE_KEEP = 0x2B,
     NECROMANCY_LABORATORY = 0x2C,
     REVERSE_CLOCK_TOWER = 0x2D,
+    REVERSE_WARP_ROOM = 0x2E,
+    BOSS_GALAMOTH = 0x36,
+    BOSS_AKMODAN_II = 0x37,
+    BOSS_SHAFT = 0x38,
+    BOSS_DOPPELGANGER40 = 0x39,
     BOSS_CREATURE = 0x3A,
     BOSS_MEDUSA = 0x3B,
     BOSS_DEATH = 0x3C,
     BOSS_BEELZEBUB = 0x3D,
+    BOSS_TRIO = 0x3E,
     CASTLE_ENTRANCE = 0x41,
 }
 
@@ -137,14 +144,24 @@ local injections = {
     ['slti v0, v0, X'] = { instruction = 0x28420000, mask = 0x7FFF },
     ['slti v0, s1, X'] = { instruction = 0x2A220000, mask = 0x7FFF },
     ['sll v0, X'] = { instruction = 0x00021000, mask = 0x001F, multiplier = 64 },
+    ['sll v0, v1, X'] = { instruction = 0x00031000, mask = 0x001F, multiplier = 64 },
     ['srl v0, $18'] = { instruction = 0x00021602, mask = 0x0000 },
     ['andi s1, v0, X'] = { instruction = 0x30510000, mask = 0x7FFF },
     ['addiu v0, X'] = { instruction = 0x24420000, mask = 0x7FFF },
     ['addiu a0, v0, X'] = { instruction = 0x24440000, mask = 0x7FFF },
     ['addiu a1, a0, X'] = { instruction = 0x24850000, mask = 0x7FFF },
     ['la v0, X'] = { instruction = 0x24850000, mask = 0x7FFF },
+    ['lw a0, X(s3)'] = { instruction = 0x8E640000, mask = 0x7FFF },
+    ['lw v0, X(s3)'] = { instruction = 0x8E620000, mask = 0x7FFF },
+    ['lw v1, X(a1)'] = { instruction = 0x8CA30000, mask = 0x7FFF },
+    ['lw a1, X(a1)'] = { instruction = 0x8CA50000, mask = 0x7FFF },
     ['copy'] = { instruction = 0x00000000, mask = 0xFFFFFFFF },
 }
+
+-- Global Evil RNG: 0xBFC02224   30427FFF andi v0,$7FFF
+-- 
+-- memory domain: BiosROM 0x20000 addresses
+-- search for 00031402 30427FFF
 
 local hooks = {}
 hooks[Stage.PROLOGUE] = { -- jal $801B186C
@@ -206,10 +223,16 @@ hooks[Stage.ALCHEMY_LABORATORY] = { -- jal $801B94D4 -- Also Slogra and Gaibon
     ['Slogra Death Explosion - X Position'] = { address = 0x801B52BC, default = 0x3042001F, injection = 'li v0, X', mask = 0x1F },
     ['Slogra Death Explosion - Y Position'] = { address = 0x801B52D4, default = 0x3042001F, injection = 'li v0, X', mask = 0x1F },
     ['Gaibon Death Explosion - X Position'] = { address = 0x801B67A8, default = 0x3042003F, injection = 'li v0, X', mask = 0x3F },
-}
+    -- TODO(sestren): Figure out how to get the cannon to repeat its shots
+        -- ['Cannon Shot - Unknown 1B294C'] = { address = 0x801B294C, default = 0x34020001, injection = 'li v0, X', mask = 0x7FFF },
+    -- TODO(sestren): Figure out how to get the elevator to go faster
+        -- ['Unknown 1'] = { address = 0x801B7360, default = 0x2442FFFF, injection = 'addiu v0, X', mask = 0x7FFF },
+        -- ['Unknown 2'] = { address = 0x801B73C8, default = 0x2442FFFF, injection = 'addiu v0, X', mask = 0x7FFF },
+        -- ['Unknown 3'] = { address = 0x801B73D0, default = 0x2463FFFF, injection = 'addiu v1, X', mask = 0x7FFF },
+    ['Karma Coin'] = { address = 0x8017E358, default = 0x30420001, injection = 'li v0, X', mask = 0x01 },
+    }
 hooks[Stage.MARBLE_GALLERY] = { -- jal $801C3788, search for 0C070DE2
     -- jal $800160E4, search for 0C005839
-        -- Global Evil RNG: 0xBFC02224   30427FFF andi v0,$7FFF
         -- 800E4D54 3042000F    li v0, X    0x0F
         -- 800E53F0 30420001    li v0, X    0x01
     ['Unknown 1C335C'] = { address = 0x801C335C, default = 0x30540003, injection = 'li s4, X', mask = 0x03 },
@@ -264,6 +287,18 @@ hooks[Stage.MARBLE_GALLERY] = { -- jal $801C3788, search for 0C070DE2
     ['Unknown 1DCE44'] = { address = 0x801DCE44, default = 0x30420003, injection = 'li v0, X', mask = 0x03 },
     ['Unknown 1EC904'] = { address = 0x801EC904, default = 0x30510007, injection = 'li s1, X', mask = 0x07 },
     ['Unknown 1ECE44'] = { address = 0x801ECE44, default = 0x30420003, injection = 'li v0, X', mask = 0x03 },
+    ['Clock Room - Statue Toggle'] = { address = 0x801CCD64, default = 0x8E6202D0, injection = 'lw v0, X(s3)', mask = 0x7FFF },
+    ['Clock Room - Minute Hand'] = { address = 0x801CCC2C, default = 0x8CA302D0, injection = 'lw v1, X(a1)', mask = 0x7FFF },
+    ['Clock Room - Hour Hand 1'] = { address = 0x801CCC44, default = 0x8CA302CC, injection = 'copy', mask = 0xFFFFFFFF },
+    ['Clock Room - Hour Hand 2'] = { address = 0x801CCC48, default = 0x8CA502D0, injection = 'copy', mask = 0xFFFFFFFF },
+    ['Clock Room - Hour Hand 3'] = { address = 0x801CCC4C, default = 0x00031080, injection = 'copy', mask = 0xFFFFFFFF },
+    ['Clock Room - Hour Hand 4'] = { address = 0x801CCC50, default = 0x00431021, injection = 'copy', mask = 0xFFFFFFFF },
+    ['Clock Room - Hour Hand 5'] = { address = 0x801CCC54, default = 0x00021900, injection = 'copy', mask = 0xFFFFFFFF },
+    ['Clock Room - Hour Hand 6'] = { address = 0x801CCC58, default = 0x00621823, injection = 'copy', mask = 0xFFFFFFFF },
+    ['Clock Room - Hour Hand 7'] = { address = 0x801CCC5C, default = 0x00031880, injection = 'copy', mask = 0xFFFFFFFF },
+    ['Clock Room - Hour Hand 8'] = { address = 0x801CCC60, default = 0x00051080, injection = 'copy', mask = 0xFFFFFFFF },
+    ['Clock Room - Hour Hand 9'] = { address = 0x801CCC64, default = 0x00451021, injection = 'copy', mask = 0xFFFFFFFF },
+    ['Clock Room - Hour Hand 10'] = { address = 0x801CCC68, default = 0x00621821, injection = 'copy', mask = 0xFFFFFFFF },
 }
 hooks[Stage.WARP_ROOM] = { -- jal $801881E8, search for 0C06207A
     -- ['Stage Nice RNG'] = { address = 0x80188214, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
@@ -491,7 +526,7 @@ hooks[Stage.BOSS_SUCCUBUS] = { -- jal $80196F90, search for 0C065BE4
     ['Stage Nice RNG'] = { address = 0x80196FBC, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
 hooks[Stage.ABANDONED_MINE] = { -- jal $8019DE74, search for 0C06779D
-    ['Stage Nice RNG'] = { address = 0x8019DE9C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
+    ['Stage Nice RNG'] = { address = 0x8019DEA0, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
 hooks[Stage.BOSS_CERBERUS] = { -- jal $80196648, search for 0C065992
     ['Stage Nice RNG'] = { address = 0x80196674, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
@@ -605,37 +640,39 @@ hooks[Stage.REVERSE_ENTRANCE] = { -- jal $801B3EB0, search for 0C06CFAC
 hooks[Stage.BOSS_BEELZEBUB] = { -- jal $80195144, search for 0C0xxxxx
     ['Stage Nice RNG'] = { address = 0x80195170, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
--- [800978B8]!!?
+hooks[Stage.BOSS_AKMODAN_II] = { -- jal $80xxxxxx, search for 0C0xxxxx
+    ['Stage Nice RNG'] = { address = 0x80195F00, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
+}
 hooks[Stage.BOSS_CREATURE] = { -- jal $8019xxxx, search for 0C06xxxx
     ['Stage Nice RNG'] = { address = 0x80198E38, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
 }
+hooks[Stage.BOSS_TRIO] = { -- jal $8019xxxx, search for 0C06xxxx
+    ['Stage Nice RNG'] = { address = 0x8019A090, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
+}
+hooks[Stage.BOSS_DOPPELGANGER40] = { -- jal $8019xxxx, search for 0C06xxxx
+    ['Stage Nice RNG'] = { address = 0x801B591C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
+}
+hooks[Stage.BOSS_GALAMOTH] = { -- jal $8019xxxx, search for 0C06xxxx
+    ['Stage Nice RNG'] = { address = 0x80199DC4, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
+}
+hooks[Stage.BOSS_OLROX] = { -- jal $8019xxxx, search for 0C06xxxx
+    ['Stage Nice RNG'] = { address = 0x801BC108, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
+}
+hooks[Stage.BOSS_SHAFT] = { -- jal $8019xxxx, search for 0C06xxxx
+    -- ['Stage Nice RNG'] = { address = 0x801BC108, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
+}
+hooks[Stage.REVERSE_WARP_ROOM] = { -- jal $8018xxxx, search for 0C06xxxx
+    ['Stage Nice RNG'] = { address = 0x8018A194, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
+}
+
+
+-- [800978B8]!!?
 -- search for 00021602 in Bizhawk
--- Reverse Warp Room
 -- Cutscene: Castle Entrance w/ Death
--- Boss: Akmodan II
--- BOSS: Beelzebub
--- BOSS: Darkwing Bat
--- BOSS: Doppelganger40
 -- BOSS: Dracula
--- BOSS: Galamoth
 -- BOSS: Lord Dracula
--- BOSS: Olrox
--- BOSS: Scylla Worm
--- BOSS: Shaft
--- BOSS: Trio
 
 -- IDEA: Guarantee Karma Coin results in something funny
-function cycle(frames)
-    -- Every N frames, cycle through all the Nice RNG values
-    if hooks[stage_id()] ~= nil then
-        local rng_value = math.floor(emu.framecount() / frames) % 256
-        for stage_id, hook in pairs(hooks[stage_id()]) do
-            if hook.desc == 'Stage Nice RNG' then
-                mainmemory.write_u32_le(hook.address - 0x80000000, 0x34020000 | (rng_value & hook.mask))
-            end
-        end
-    end
-end
 
 -- local prev_room_id = 
 local variables = {}
@@ -645,7 +682,6 @@ variables['perimeter_y'] = 0x00
 variables['rectangle_x'] = 0x00
 variables['rectangle_y'] = 0x00
 variables['morse_code'] = 0x00
-variables['cycle_04'] = 0x00
 variables['book_01'] = 0x10
 variables['book_02'] = 0x10
 variables['book_03'] = 0x10
@@ -665,6 +701,7 @@ local global_sources = {
     -- ['Stage Nice RNG'] = { type = 'vanilla' },
     ['Stage Nice RNG'] = { type = 'fixed', param1 = 0x00 },
 }
+
 local stage_sources = {}
 stage_sources[Stage.PROLOGUE] = {
     ['Stage Nice RNG'] = { type = 'vanilla' },
@@ -709,10 +746,20 @@ stage_sources[Stage.ALCHEMY_LABORATORY] = {
     ['Green Axe Knight - Attack Step'] = { type = 'fixed', param1 = 0x07 },
     ['Slogra - Taunt Check'] = { type = 'fixed', param1 = 0x00 },
     -- ['Gaibon Death Explosion - X Position'] = { type = 'pingpong', param1 = 0x3F },
+    ['Karma Coin'] = { type = 'fixed', param1 = 0x00 },
 }
 stage_sources[Stage.MARBLE_GALLERY] = {
     ['Stage Nice RNG'] = { type = 'vanilla' },
     ['Flea Man'] = { type = 'fixed', param1 = 0x02 },
+    ['Clock Room - Minute Hand'] = { type = 'fixed', param1 = 0x2D4 },
+    ['Clock Room - Hour Hand 1'] = { type = 'fixed', param1 = 0x8CA302D4 }, -- lw v1,$2D4(a1)
+    ['Clock Room - Hour Hand 3'] = { type = 'fixed', param1 = 0x00000000 }, -- nop
+    ['Clock Room - Hour Hand 4'] = { type = 'fixed', param1 = 0x00000000 }, -- nop
+    ['Clock Room - Hour Hand 5'] = { type = 'fixed', param1 = 0x00051900 }, -- sll v1,a1,$4
+    ['Clock Room - Hour Hand 6'] = { type = 'fixed', param1 = 0x00651823 }, -- subu v1,a1
+    ['Clock Room - Hour Hand 8'] = { type = 'fixed', param1 = 0x00000000 }, -- nop
+    ['Clock Room - Hour Hand 9'] = { type = 'fixed', param1 = 0x00000000 }, -- nop
+    ['Clock Room - Hour Hand 10'] = { type = 'fixed', param1 = 0x00000000 }, -- nop
 }
 stage_sources[Stage.LONG_LIBRARY] = {
     ['Stage Nice RNG'] = { type = 'fixed', param1 = 0xFF },
@@ -722,6 +769,15 @@ stage_sources[Stage.LONG_LIBRARY] = {
     ['Magic Tome - Unknown 1'] = { type = 'fixed', param1 = 0x10 },
     ['Magic Tome - Unknown 2'] = { type = 'fixed', param1 = 0x10 },
     ['Magic Tome - Unknown 3'] = { type = 'fixed', param1 = 0x10 },
+}
+stage_sources[Stage.ABANDONED_MINE] = {
+    ['Stage Nice RNG'] = { type = 'fixed', param1 = 0x00 },
+}
+stage_sources[Stage.BOSS_CERBERUS] = {
+    ['Stage Nice RNG'] = { type = 'cycle', param1 = 0x03, param2 = 0x02, param3 = 0xFF },
+}
+stage_sources[Stage.BOSS_AKMODAN_II] = {
+    ['Stage Nice RNG'] = { type = 'cycle', param1 = 0x01, param2 = 0x01, param3 = 0xFF },
 }
 
 local room_sources = {}
@@ -744,13 +800,6 @@ room_sources[Room.WARG_HALLWAY] = {
 room_sources[Room.BLOODY_ZOMBIE_HALLWAY] = {
     ['Bloody Zombie'] = { stage = Stage.ALCHEMY_LABORATORY, type = 'variable', param1 = 'morse_code' },
 }
--- IDEA: Each zone begins with its RNG cursed in some way
--- IDEA: Certain actions will bless the RNG, eventually bringing it back to normal
--- IDEA: Alucard will say 'What!?' each time you find out how to bless the RNG
--- RNG states:
--- * Cursed (can produce illegal outcomes)
--- * Tamed (disobeys vanilla RNG, but does not produce illegal outcomes)
--- * Blessed (obeys vanilla RNG)
 
 function curated()
     variables['rectangle_x'] = lerp_rect_16_08[1 + (emu.framecount() % #lerp_rect_16_08)][1]
@@ -819,7 +868,8 @@ function curated()
                         rng_value = rng_value & source.param2
                     end
                 elseif source.type == 'cycle' then
-                    rng_value = emu.framecount() % source.param1
+                    local frames = source.param1 * emu.framecount()
+                    rng_value = math.floor(frames / source.param2) % source.param3
                 -- elseif source.type == 'pingpong' then
                 --     rng_value = emu.framecount() % (2 * source.param1)
                 --     if rng_value >= source.param1 then
