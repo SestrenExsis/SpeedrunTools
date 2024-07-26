@@ -1,5 +1,7 @@
 require "SotnCore"
 
+-- TODO(sestren): Figure out how to handle the canvas going away
+
 local P = {}
 StaticRNG = P
 
@@ -266,28 +268,91 @@ P.text = function(__col, __row, __message, __color)
     P.canvas.DrawText(x, y, __message, __color, 0xff000000, font_height)
 end
 
+P.pad = function(__number, __digits, __pad)
+    local result = tostring(__number)
+    while #result < __digits do
+        result = __pad..result
+    end
+    return result
+end
+
+P.food = function(__food_id)
+    local foods = {
+        "ora", -- "Orange",
+        "app", -- "Apple",
+        "ban", -- "Banana",
+        "grp", -- "Grapes",
+        "str", -- "Strawberry",
+        "pin", -- "Pineapple",
+        "pnt", -- "Peanuts",
+        "tod", -- "Toadstool",
+        "shi", -- "Shiitake",
+        "cak", -- "Cheesecake",
+        "sho", -- "Shortcake",
+        "tar", -- "Tart",
+        "par", -- "Parfait",
+        "pud", -- "Pudding",
+        "ice", -- "Ice cream",
+        "fra", -- "Frankfurter",
+        "bur", -- "Hamburger",
+        "piz", -- "Pizza",
+        "chz", -- "Cheese",
+        "egg", -- "Ham and eggs",
+        "let", -- "Omelette",
+        "mor", -- "Morning set",
+        "lna", -- "Lunch A",
+        "lnb", -- "Lunch B",
+        "cry", -- "Curry rice",
+        "gyr", -- "Gyros plate",
+        "get", -- "Spaghetti",
+        "juc", -- "Grape juice",
+        "bat", -- "Barley tea",
+        "grt", -- "Green tea",
+        "nat", -- "Natou",
+        "ram", -- "Ramen",
+        "mis", -- "Miso soup",
+        "sus", -- "Sushi",
+        "por", -- "Pork bun",
+        "red", -- "Red bean bun",
+        "chi", -- "Chinese bun",
+        "dim", -- "Dim Sum set",
+        "pot", -- "Pot roast",
+        "sir", -- "Sirloin",
+        "tur", -- "Turkey"
+    }
+    local result = string.upper(foods[1 + __food_id])
+    return result
+end
+
+P.coin = function(__side_id)
+    local sides = {
+        "T", -- "Tails",
+        "H", -- "Heads",
+    }
+    local result = sides[1 + __side_id]
+    return result
+end
+
 P.draw = function()
     P.canvas.Clear(0xff000000)
     -- Show nice RNG info
-    P.text(5, 1,
-        SotnCore.hex(P.room_nice_rng, 2).."      "..
-        SotnCore.hex(P.room_nice_rng % 2, 2).."   "..
-        SotnCore.hex(P.room_nice_rng % 8, 2).."   "..
-        SotnCore.hex(P.room_nice_rng % 16, 2).."   "..
-        SotnCore.hex(P.room_nice_rng % 32, 2).."   "..
-        SotnCore.hex(P.room_nice_rng % 41, 2).."   "..
-        SotnCore.hex(P.room_nice_rng % 256, 2)
+    P.text(5, 1, SotnCore.hex(P.room_nice_rng, 2).."      "..
+        P.pad(1 + P.room_nice_rng % 2, 2, " ").."   "..
+        P.pad(1 + P.room_nice_rng % 8, 2, " ").."   "..
+        P.pad(1 + P.room_nice_rng % 16, 2, " ").."   "..
+        P.pad(1 + P.room_nice_rng % 32, 2, " ").."   "..
+        "--".."  "..
+        P.pad(1 + P.room_nice_rng % 256, 3, " ")
     )
     P.text(5, 0, "rng     D2   D8  D16  D32  D41 D256", 0xffffffff, 0xff000000)
     -- Show evil RNG info
-    P.text(5, 2,
-        SotnCore.hex(P.room_evil_rng, 4).."    "..
-        SotnCore.hex(P.room_evil_rng % 2, 2).."   "..
-        SotnCore.hex(P.room_evil_rng % 8, 2).."   "..
-        SotnCore.hex(P.room_evil_rng % 16, 2).."   "..
-        SotnCore.hex(P.room_evil_rng % 32, 2).."   "..
-        SotnCore.hex(P.room_evil_rng % 41, 2).."   "..
-        SotnCore.hex(P.room_evil_rng % 256, 2)
+    P.text(5, 2, SotnCore.hex(P.room_evil_rng, 4).."     "..
+        P.coin(P.room_evil_rng % 2).."   "..
+        P.pad(1 + P.room_evil_rng % 8, 2, " ").."   "..
+        P.pad(1 + P.room_evil_rng % 16, 2, " ").."   "..
+        P.pad(1 + P.room_evil_rng % 32, 2, " ").."  "..
+        P.food(P.room_evil_rng % 41).."  "..
+        P.pad(1 + P.room_evil_rng % 256, 3, " ")
     )
     P.text(0, 1, "nice", 0xff00ff00)
     P.text(0, 2, "evil", 0xffff0000)
@@ -295,8 +360,24 @@ P.draw = function()
 end
 
 P.update = function()
-    -- TODO(sestren): Figure out how to handle the canvas going away
+    local nice_delta = P.nice_index - P.prev_nice_index
+    if mainmemory.read_u32_le(0x072EE8) ~= 0 then
+        P.active_frame = emu.framecount()
+    end
+    local frames_since_active = emu.framecount() - P.active_frame
+    local frames_since_rng_change = emu.framecount() - P.rng_change_frame
+    local stale_ind = false
+    if (
+        frames_since_active >= 120 and
+        frames_since_rng_change >= 60
+    ) then
+        stale_ind = true
+    end
     if P.room_id() ~= P.prev_room_id then
+        -- stale_ind = true
+    end
+    if stale_ind then
+        P.rng_change_frame = emu.framecount()
         P.room_nice_rng = math.random(0x00, 0xFF)
         P.room_evil_rng = math.random(0x00, 0x7FFF)
     end
@@ -336,6 +417,12 @@ P.update = function()
             mainmemory.write_u32_le(hook.address - 0x80000000, injected_value)
         end
     end
+    P.prev_nice_index = P.nice_index
+    P.prev_evil_index = P.evil_index
+    local nice_seed = SotnCore.read_nice_seed()
+    local evil_seed = SotnCore.read_evil_seed()
+    P.nice_index = SotnCore.nice_seed_index(nice_seed)
+    P.evil_index = SotnCore.evil_seed_index(evil_seed)
     P.prev_room_id = P.room_id()
 end
 
@@ -344,6 +431,12 @@ event.onframeend(P.update, "StaticRNG__update")
 
 gui.defaultBackground(0xffff0000)
 P.scale = 1
+P.prev_nice_index = 0
+P.prev_evil_index = 0
+P.nice_index = 0
+P.evil_index = 0
+P.active_frame = 0
+P.rng_change_frame = 0
 P.prev_room_id = P.room_id()
 P.room_nice_rng = 0xFF
 P.room_evil_rng = 0x7FFF
