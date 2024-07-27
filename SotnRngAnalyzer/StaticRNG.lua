@@ -35,6 +35,7 @@ P.Stage = {
     WARP_ROOM = 0x0E,
     BOSS_SUCCUBUS = 0x12,
     BOSS_CERBERUS = 0x16,
+    -- UNKNOWN_17 = 0x17,
     BOSS_RICHTER = 0x18,
     BOSS_HIPPOGRYPH = 0x19,
     BOSS_DOPPELGANGER10 = 0x1A,
@@ -51,12 +52,14 @@ P.Stage = {
     CAVE = 0x25,
     ANTI_CHAPEL = 0x26,
     REVERSE_ENTRANCE = 0x27,
+    -- TODO(sestren): REVERSE_CASTLE_CENTER = 0x28,
     REVERSE_CAVERNS = 0x29,
     REVERSE_COLOSSEUM = 0x2A,
     REVERSE_KEEP = 0x2B,
     NECROMANCY_LABORATORY = 0x2C,
     REVERSE_CLOCK_TOWER = 0x2D,
     REVERSE_WARP_ROOM = 0x2E,
+    -- TODO(sestren): BOSS_DARWKING_BAT = 0x35,
     BOSS_GALAMOTH = 0x36,
     BOSS_AKMODAN_II = 0x37,
     BOSS_SHAFT = 0x38,
@@ -66,6 +69,7 @@ P.Stage = {
     BOSS_DEATH = 0x3C,
     BOSS_BEELZEBUB = 0x3D,
     BOSS_TRIO = 0x3E,
+    -- DEBUG_ROOM = 0x40,
     CASTLE_ENTRANCE = 0x41,
 }
 
@@ -115,7 +119,7 @@ P.hooks = {
         ['Stage Nice RNG'] = { address = 0x801C37B4, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
     },
     [P.Stage.WARP_ROOM] = { -- jal $801881E8, search for 0C06207A
-        -- ['Stage Nice RNG'] = { address = 0x80188214, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
+        ['Stage Nice RNG'] = { address = 0x80188214, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
     },
     [P.Stage.OUTER_WALL] = { -- jal $801C19F0, search for 0C07067C
         ['Stage Nice RNG'] = { address = 0x801C1A1C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
@@ -241,7 +245,7 @@ P.hooks = {
         ['Stage Nice RNG'] = { address = 0x801BC108, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
     },
     [P.Stage.BOSS_SHAFT] = { -- jal $8019xxxx, search for 0C06xxxx
-        -- ['Stage Nice RNG'] = { address = 0x801BC108, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
+        ['Stage Nice RNG'] = { address = 0x801BC108, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
     },
     [P.Stage.REVERSE_WARP_ROOM] = { -- jal $8018xxxx, search for 0C06xxxx
         ['Stage Nice RNG'] = { address = 0x8018A194, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
@@ -331,7 +335,7 @@ end
 P.draw = function()
     P.canvas.Clear(0xff000000)
     -- Show nice RNG info
-    P.text(5, 1, SotnCore.hex(P.fixed_nice_rng, 2).."      "..
+    P.text(6, 1, "  "..SotnCore.hex(P.fixed_nice_rng, 2).."   "..
         P.pad(1 + P.fixed_nice_rng % 2, 2, " ").."   "..
         P.pad(1 + P.fixed_nice_rng % 8, 2, " ").."   "..
         P.pad(1 + P.fixed_nice_rng % 16, 2, " ").."   "..
@@ -339,17 +343,7 @@ P.draw = function()
         "--".."  "..
         P.pad(1 + P.fixed_nice_rng % 256, 3, " ")
     )
-    P.text(5, 0, "rng     D2   D8  D16  D32  D41 D256", 0xffffffff, 0xff000000)
-    -- Show evil RNG info
-    P.text(5, 2, SotnCore.hex(P.fixed_evil_rng, 4).."     "..
-        P.coin(P.fixed_evil_rng % 2).."   "..
-        P.pad(1 + P.fixed_evil_rng % 8, 2, " ").."   "..
-        P.pad(1 + P.fixed_evil_rng % 16, 2, " ").."   "..
-        P.pad(1 + P.fixed_evil_rng % 32, 2, " ").."  "..
-        P.food(P.fixed_evil_rng % 41).."  "..
-        P.pad(1 + P.fixed_evil_rng % 256, 3, " ")
-    )
-    -- Blink Nice sign on any activity
+    -- Blink sign on any activity
     local nice_delta = P.nice_index - P.prev_nice_index
     local nice_color = 0xff005500
     if nice_delta > 0 then
@@ -359,30 +353,51 @@ P.draw = function()
         nice_flash = false
         nice_color = 0xff00ff00
     end
-    P.text(0, 1, "nice■", nice_color)
-    -- Blink Evil sign on extra activity
+    P.text(4, 1, "■", nice_color)
+    -- Show evil RNG info
+    P.text(6, 2, SotnCore.hex(P.fixed_evil_rng, 4).."    "..
+        P.coin(P.fixed_evil_rng % 2).."   "..
+        P.pad(1 + P.fixed_evil_rng % 8, 2, " ").."   "..
+        P.pad(1 + P.fixed_evil_rng % 16, 2, " ").."   "..
+        P.pad(1 + P.fixed_evil_rng % 32, 2, " ").."  "..
+        P.food(P.fixed_evil_rng % 41).."  "..
+        P.pad(1 + P.fixed_evil_rng % 256, 3, " ")
+    )
+    -- Blink sign on extra activity
     local evil_delta = P.evil_index - P.prev_evil_index
     local evil_color = 0xff550000
     if evil_delta > 1 then
         evil_flash = true
-        evil_color = 0xfffffcccc
+        evil_color = 0xffffcccc
     elseif evil_flash then
         evil_flash = false
         evil_color = 0xffff0000
     end
-    P.text(0, 2, "evil■", evil_color)
+    P.text(4, 2, "■", evil_color)
+    P.text(0, 1, "nice", 0xff00ff00)
+    P.text(0, 2, "evil", 0xffff0000)
+    P.text(6, 0, "value  D2   D8  D16  D32  D41 D256", 0xffffffff, 0xff000000)
+    -- Blink on player activity
+    local frames_since_active = emu.framecount() - P.active_frame
+    local activity_color = 0xff000055
+    if frames_since_active == 0 then
+        activity_color = 0xff0000ff
+    elseif frames_since_active == 1 then
+        activity_color = 0xff0000cc
+    end
+    P.text(0, 0, "...", activity_color)
     P.canvas.Refresh()
 end
 
 P.update = function()
-    -- If frame counter makes no sense (due to loading a save state, for example), reset it
+    -- Reset counters if they fall behind (after loading a save state, for example)
     if emu.framecount() < P.active_frame then
         P.active_frame = emu.framecount()
     end
     if emu.framecount() < P.rng_change_frame then
         P.rng_change_frame = emu.framecount()
     end
-    -- If the player stops pressing buttons, start shuffling the RNG periodically
+    -- If the player goes idle, start shuffling the RNG periodically
     if mainmemory.read_u32_le(0x072EE8) ~= 0 then
         P.active_frame = emu.framecount()
     end
@@ -390,8 +405,8 @@ P.update = function()
     local frames_since_rng_change = emu.framecount() - P.rng_change_frame
     local stale_ind = false
     if (
-        frames_since_active >= 120 and
-        frames_since_rng_change >= 60
+        frames_since_active >= P.idle_frames and
+        frames_since_rng_change >= P.cycle_frames
     ) then
         stale_ind = true
     end
@@ -402,7 +417,7 @@ P.update = function()
     end
     -- Assign Evil RNG
     memory.write_u32_le(0x002224, BizMath.bor(0x34020000, P.fixed_evil_rng), 'BiosROM')
-    -- Assign Nice RNG, if it can be found in the Stage hooks
+    -- Assign Nice RNG, if it can be found in one the Stage hooks
     if P.hooks[P.stage_id()] ~= nil then
         for desc, hook in pairs(P.hooks[P.stage_id()]) do
             local source = P.global_sources[desc]
@@ -437,17 +452,23 @@ event.unregisterbyname("StaticRNG__update")
 event.onframeend(P.update, "StaticRNG__update")
 
 gui.defaultBackground(0xffff0000)
-P.scale = 1
+
+P.active_frame = 0
+P.rng_change_frame = 0
 P.prev_nice_index = 0
 P.prev_evil_index = 0
 P.nice_index = 0
 P.evil_index = 0
-P.active_frame = 0
-P.rng_change_frame = 0
 P.evil_flash = false
 P.nice_flash = false
 P.fixed_nice_rng = 0xFF
 P.fixed_evil_rng = 0x7FFF
+
+-- NOTE(sestren): These are configurable
+P.scale = 1
+P.idle_frames = 60
+P.cycle_frames = 30
+
 P.canvas_width = P.scale * 320
 P.canvas_height = P.scale * 56
 P.canvas = gui.createcanvas(P.canvas_width, P.canvas_height, P.scale * 4, P.scale * 4)
