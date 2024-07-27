@@ -74,11 +74,6 @@ P.stage_id = function()
     return result
 end
 
-P.room_id = function()
-    local result = mainmemory.read_u32_le(0x1375BC)
-    return result
-end
-
 P.injections = {
     ['nop'] = { instruction = 0x00000000, mask = 0x0000 },
     ['li v0, X'] = { instruction = 0x34020000, mask = 0x7FFF },
@@ -257,9 +252,6 @@ P.global_sources = {
     ['Stage Nice RNG'] = { type = 'room', param1 = 0x00 },
 }
 
-P.stage_sources = {
-}
-
 P.text = function(__col, __row, __message, __color)
     local font_height = 12
     local font_width = 8
@@ -339,31 +331,58 @@ end
 P.draw = function()
     P.canvas.Clear(0xff000000)
     -- Show nice RNG info
-    P.text(5, 1, SotnCore.hex(P.room_nice_rng, 2).."      "..
-        P.pad(1 + P.room_nice_rng % 2, 2, " ").."   "..
-        P.pad(1 + P.room_nice_rng % 8, 2, " ").."   "..
-        P.pad(1 + P.room_nice_rng % 16, 2, " ").."   "..
-        P.pad(1 + P.room_nice_rng % 32, 2, " ").."   "..
+    P.text(5, 1, SotnCore.hex(P.fixed_nice_rng, 2).."      "..
+        P.pad(1 + P.fixed_nice_rng % 2, 2, " ").."   "..
+        P.pad(1 + P.fixed_nice_rng % 8, 2, " ").."   "..
+        P.pad(1 + P.fixed_nice_rng % 16, 2, " ").."   "..
+        P.pad(1 + P.fixed_nice_rng % 32, 2, " ").."   "..
         "--".."  "..
-        P.pad(1 + P.room_nice_rng % 256, 3, " ")
+        P.pad(1 + P.fixed_nice_rng % 256, 3, " ")
     )
     P.text(5, 0, "rng     D2   D8  D16  D32  D41 D256", 0xffffffff, 0xff000000)
     -- Show evil RNG info
-    P.text(5, 2, SotnCore.hex(P.room_evil_rng, 4).."     "..
-        P.coin(P.room_evil_rng % 2).."   "..
-        P.pad(1 + P.room_evil_rng % 8, 2, " ").."   "..
-        P.pad(1 + P.room_evil_rng % 16, 2, " ").."   "..
-        P.pad(1 + P.room_evil_rng % 32, 2, " ").."  "..
-        P.food(P.room_evil_rng % 41).."  "..
-        P.pad(1 + P.room_evil_rng % 256, 3, " ")
+    P.text(5, 2, SotnCore.hex(P.fixed_evil_rng, 4).."     "..
+        P.coin(P.fixed_evil_rng % 2).."   "..
+        P.pad(1 + P.fixed_evil_rng % 8, 2, " ").."   "..
+        P.pad(1 + P.fixed_evil_rng % 16, 2, " ").."   "..
+        P.pad(1 + P.fixed_evil_rng % 32, 2, " ").."  "..
+        P.food(P.fixed_evil_rng % 41).."  "..
+        P.pad(1 + P.fixed_evil_rng % 256, 3, " ")
     )
-    P.text(0, 1, "nice", 0xff00ff00)
-    P.text(0, 2, "evil", 0xffff0000)
+    -- Blink Nice sign on any activity
+    local nice_delta = P.nice_index - P.prev_nice_index
+    local nice_color = 0xff005500
+    if nice_delta > 0 then
+        nice_flash = true
+        nice_color = 0xffccffcc
+    elseif nice_flash then
+        nice_flash = false
+        nice_color = 0xff00ff00
+    end
+    P.text(0, 1, "nice■", nice_color)
+    -- Blink Evil sign on extra activity
+    local evil_delta = P.evil_index - P.prev_evil_index
+    local evil_color = 0xff550000
+    if evil_delta > 1 then
+        evil_flash = true
+        evil_color = 0xfffffcccc
+    elseif evil_flash then
+        evil_flash = false
+        evil_color = 0xffff0000
+    end
+    P.text(0, 2, "evil■", evil_color)
     P.canvas.Refresh()
 end
 
 P.update = function()
-    local nice_delta = P.nice_index - P.prev_nice_index
+    -- If frame counter makes no sense (due to loading a save state, for example), reset it
+    if emu.framecount() < P.active_frame then
+        P.active_frame = emu.framecount()
+    end
+    if emu.framecount() < P.rng_change_frame then
+        P.rng_change_frame = emu.framecount()
+    end
+    -- If the player stops pressing buttons, start shuffling the RNG periodically
     if mainmemory.read_u32_le(0x072EE8) ~= 0 then
         P.active_frame = emu.framecount()
     end
@@ -376,57 +395,42 @@ P.update = function()
     ) then
         stale_ind = true
     end
-    if P.room_id() ~= P.prev_room_id then
-        -- stale_ind = true
-    end
     if stale_ind then
         P.rng_change_frame = emu.framecount()
-        P.room_nice_rng = math.random(0x00, 0xFF)
-        P.room_evil_rng = math.random(0x00, 0x7FFF)
+        P.fixed_nice_rng = math.random(0x00, 0xFF)
+        P.fixed_evil_rng = math.random(0x00, 0x7FFF)
     end
-    memory.write_u32_le(0x002224, BizMath.bor(0x34020000, P.room_evil_rng), 'BiosROM')
+    -- Assign Evil RNG
+    memory.write_u32_le(0x002224, BizMath.bor(0x34020000, P.fixed_evil_rng), 'BiosROM')
+    -- Assign Nice RNG, if it can be found in the Stage hooks
     if P.hooks[P.stage_id()] ~= nil then
         for desc, hook in pairs(P.hooks[P.stage_id()]) do
-            -- Prioritize stage sources over global sources
             local source = P.global_sources[desc]
-            if P.stage_sources[P.stage_id()] ~= nil then
-                if P.stage_sources[P.stage_id()][desc] ~= nil then
-                    source = P.stage_sources[P.stage_id()][desc]
-                end
-            end
             -- Set value to inject to either the default value or the one given by the source
             local injected_value = hook.default
             if source == nil or source.type == 'vanilla' then
                 injected_value = hook.default
-            elseif source.type == 'mask' then
-                injected_value = BizMath.bor(BizMath.band(0xFFFF8000, hook.default), source.param1)
             elseif hook.injection ~= nil and P.injections[hook.injection] ~= nil then
-                local instruction = P.injections[hook.injection].instruction
-                local rng_value = 0x0000
-                if source.type == 'fixed' then
-                    rng_value = source.param1
-                elseif source.type == 'room' then
-                    rng_value = P.room_nice_rng
-                elseif source.type == 'random' then
-                    rng_value = BizMath.band(math.random(0x7FFF), source.param1)
-                end
-                rng_value = BizMath.band(rng_value, P.injections[hook.injection].mask)
-                if P.injections[hook.injection].multiplier ~= nil then
-                    rng_value = rng_value * P.injections[hook.injection].multiplier
-                end
-                injected_value = BizMath.bor(instruction, rng_value)
+                local rng_value = BizMath.band(
+                    P.fixed_nice_rng,
+                    P.injections[hook.injection].mask
+                )
+                injected_value = BizMath.bor(
+                    P.injections[hook.injection].instruction,
+                    rng_value
+                )
             end
             -- Write the injected value at the hook's address
             mainmemory.write_u32_le(hook.address - 0x80000000, injected_value)
         end
     end
+    -- Update previous frame information
     P.prev_nice_index = P.nice_index
     P.prev_evil_index = P.evil_index
     local nice_seed = SotnCore.read_nice_seed()
     local evil_seed = SotnCore.read_evil_seed()
     P.nice_index = SotnCore.nice_seed_index(nice_seed)
     P.evil_index = SotnCore.evil_seed_index(evil_seed)
-    P.prev_room_id = P.room_id()
 end
 
 event.unregisterbyname("StaticRNG__update")
@@ -440,9 +444,10 @@ P.nice_index = 0
 P.evil_index = 0
 P.active_frame = 0
 P.rng_change_frame = 0
-P.prev_room_id = P.room_id()
-P.room_nice_rng = 0xFF
-P.room_evil_rng = 0x7FFF
+P.evil_flash = false
+P.nice_flash = false
+P.fixed_nice_rng = 0xFF
+P.fixed_evil_rng = 0x7FFF
 P.canvas_width = P.scale * 320
 P.canvas_height = P.scale * 56
 P.canvas = gui.createcanvas(P.canvas_width, P.canvas_height, P.scale * 4, P.scale * 4)
