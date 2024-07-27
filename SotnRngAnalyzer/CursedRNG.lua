@@ -162,6 +162,14 @@ local injections = {
 -- 
 -- memory domain: BiosROM 0x20000 addresses
 -- search for 00031402 30427FFF
+-- Karma Coin
+        -- 00000000
+        -- A6600050
+        -- 0C005839
+        -- A6600052
+        -- 30420001 <-- HOOK
+        -- 10400005
+        -- 00000000
 
 local hooks = {}
 hooks[Stage.PROLOGUE] = { -- jal $801B186C
@@ -778,6 +786,9 @@ stage_sources[Stage.BOSS_CERBERUS] = {
 }
 stage_sources[Stage.BOSS_AKMODAN_II] = {
     ['Stage Nice RNG'] = { type = 'cycle', param1 = 0x01, param2 = 0x01, param3 = 0xFF },
+}
+stage_sources[Stage.CASTLE_KEEP] = {
+    ['Stage Nice RNG'] = { type = 'fixed', param1 = 0x07 },
 }
 
 local room_sources = {}

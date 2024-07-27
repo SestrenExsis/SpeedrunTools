@@ -2,6 +2,18 @@ require "SotnCore"
 
 -- TODO(sestren): Figure out how to handle the canvas going away
 
+-- NOTE(sestren): Karma Coin RNG can't easily be restored to random after 
+-- NOTE(sestren): fixing, unfortunately. This is due to the game loading in 
+-- NOTE(sestren): weapon logic, and would require more work than I am willing
+-- NOTE(sestren): to put in right now to account for it
+    -- 00000000
+    -- A6600050
+    -- 0C005839
+    -- A6600052
+    -- 30420001 <-- HOOK
+    -- 10400005
+    -- 00000000
+
 local P = {}
 StaticRNG = P
 
@@ -103,16 +115,9 @@ P.hooks = {
     },
     [P.Stage.ALCHEMY_LABORATORY] = { -- jal $801B94D4 -- Also Slogra and Gaibon
         ['Stage Nice RNG'] = { address = 0x801B9500, default = 0x00021602, injection = 'li v0, X', mask = 0x00 },
-        ['Green Axe Knight - Attack RNG'] = { address = 0x801C4584, default = 0x30420007, injection = 'li v0, X', mask = 0x07 },
-        ['Bloody Zombie'] = { address = 0x801C5714, default = 0x3042003F, injection = 'li v0, X', mask = 0x3F },
-        ['Spittlebone'] = { address = 0x801C68E8, default = 0x3042001F, injection = 'li v0, X', mask = 0x1F },
-        ['Slogra - Taunt Check'] = { address = 0x801B4B58, default = 0x3042003F, injection = 'li v0, X', mask = 0x3F },
-        ['Karma Coin'] = { address = 0x8017E358, default = 0x30420001, injection = 'li v0, X', mask = 0x01 },
     },
     [P.Stage.MARBLE_GALLERY] = { -- jal $801C3788, search for 0C070DE2
         ['Stage Nice RNG'] = { address = 0x801C37B4, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
-        ['Diplocephalus'] = { address = 0x801D1648, default = 0x3042007F, injection = 'li v0, X', mask = 0x7F },
-        ['Flea Man'] = { address = 0x801DC904, default = 0x30510007, injection = 'li s1, X', mask = 0x07 },
     },
     [P.Stage.WARP_ROOM] = { -- jal $801881E8, search for 0C06207A
         -- ['Stage Nice RNG'] = { address = 0x80188214, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
@@ -134,9 +139,6 @@ P.hooks = {
     },
     [P.Stage.LONG_LIBRARY] = { -- jal $801BF130, search for 0C06FC4C
         ['Stage Nice RNG'] = { address = 0x801BF15C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
-        ['Spellbook - Rotation 1'] = { address = 0x801D25B0, default = 0x3042001F, injection = 'li v0, X', mask = 0x1F },
-        ['Spellbook - Rotation 2'] = { address = 0x801D25C0, default = 0x3042001F, injection = 'li v0, X', mask = 0x1F },
-        ['Spellbook - Rotation 3'] = { address = 0x801D25D0, default = 0x3042001F, injection = 'li v0, X', mask = 0x1F },
     },
     [P.Stage.CLOCK_TOWER] = { -- jal $801AC6E0, search for 0C06B1B8 -- Also Karasuman
         ['Stage Nice RNG'] = { address = 0x801AC70C, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
@@ -205,7 +207,7 @@ P.hooks = {
         ['Stage Nice RNG'] = { address = 0x801B7350, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
     },
     [P.Stage.NECROMANCY_LABORATORY] = { -- jal $801ACC04, search for 0C06B301
-        ['Stage Nice RNG'] = { address = 0x801ACC30, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
+       ['Stage Nice RNG'] = { address = 0x801ACC30, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
     },
     [P.Stage.CAVE] = { -- jal $8019ABF4, search for 0C066AFD
         ['Stage Nice RNG'] = { address = 0x8019AC20, default = 0x00021602, injection = 'li v0, X', mask = 0xFF },
@@ -255,7 +257,8 @@ P.global_sources = {
     ['Stage Nice RNG'] = { type = 'room', param1 = 0x00 },
 }
 
-P.stage_sources = {}
+P.stage_sources = {
+}
 
 P.text = function(__col, __row, __message, __color)
     local font_height = 12
@@ -287,8 +290,8 @@ P.food = function(__food_id)
         "pnt", -- "Peanuts",
         "tod", -- "Toadstool",
         "shi", -- "Shiitake",
-        "cak", -- "Cheesecake",
-        "sho", -- "Shortcake",
+        "chk", -- "Cheesecake",
+        "shk", -- "Shortcake",
         "tar", -- "Tart",
         "par", -- "Parfait",
         "pud", -- "Pudding",
@@ -297,14 +300,14 @@ P.food = function(__food_id)
         "bur", -- "Hamburger",
         "piz", -- "Pizza",
         "chz", -- "Cheese",
-        "egg", -- "Ham and eggs",
-        "let", -- "Omelette",
+        "ham", -- "Ham and eggs",
+        "ome", -- "Omelette",
         "mor", -- "Morning set",
         "lna", -- "Lunch A",
         "lnb", -- "Lunch B",
         "cry", -- "Curry rice",
         "gyr", -- "Gyros plate",
-        "get", -- "Spaghetti",
+        "spg", -- "Spaghetti",
         "juc", -- "Grape juice",
         "bat", -- "Barley tea",
         "grt", -- "Green tea",
