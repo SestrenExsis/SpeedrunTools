@@ -156,7 +156,7 @@ P.pad = function(__number, __digits, __pad)
     return result
 end
 
-P.food = function(__food_id)
+P.lookup_food = function(__food_id)
     local foods = {
         "ora", -- "Orange",
         "app", -- "Apple",
@@ -204,7 +204,7 @@ P.food = function(__food_id)
     return result
 end
 
-P.coin = function(__side_id)
+P.lookup_coin = function(__side_id)
     local sides = {
         "T", -- "Tails",
         "H", -- "Heads",
@@ -237,11 +237,11 @@ P.draw = function()
     P.text(4, 1, "■", nice_color)
     -- Show evil RNG info
     P.text(6, 2, SotnCore.hex(P.fixed_evil_rng, 4).."    "..
-        P.coin(P.fixed_evil_rng % 2).."   "..
+        P.lookup_coin(P.fixed_evil_rng % 2).."   "..
         P.pad(1 + P.fixed_evil_rng % 8, 2, " ").."   "..
         P.pad(1 + P.fixed_evil_rng % 16, 2, " ").."   "..
         P.pad(1 + P.fixed_evil_rng % 32, 2, " ").."  "..
-        P.food(P.fixed_evil_rng % 41).."  "..
+        P.lookup_food(P.fixed_evil_rng % 41).."  "..
         P.pad(1 + P.fixed_evil_rng % 256, 3, " ")
     )
     -- Blink sign on extra activity
@@ -270,6 +270,27 @@ P.draw = function()
     P.canvas.Refresh()
 end
 
+P.hamming_weight = function(__a)
+    local result = 0
+    while __a > 0 do
+        result = result + BizMath.band(__a, 1)
+        __a = BizMath.rshift(__a, 1)
+    end
+    return result
+end
+
+P.biased_random = function(__maximum, __trials)
+    -- Out of one or more trials, choose the lowest number by hamming weight
+    local result = __maximum
+    for i = 1, __trials do
+        local new = math.random(0x00, __maximum)
+        if P.hamming_weight(new) < P.hamming_weight(result) then
+            result = new
+        end
+    end
+    return result
+end
+
 P.update = function()
     -- Reset counters if they fall behind (after loading a save state, for example)
     if emu.framecount() < P.active_frame then
@@ -293,8 +314,8 @@ P.update = function()
     end
     if stale_ind then
         P.rng_change_frame = emu.framecount()
-        P.fixed_nice_rng = math.random(0x00, 0xFF)
-        P.fixed_evil_rng = math.random(0x00, 0x7FFF)
+        P.fixed_nice_rng = P.biased_random(0xFF, 32)
+        P.fixed_evil_rng = P.biased_random(0x7FFF, 32)
     end
     -- Assign Evil RNG
     memory.write_u32_le(0x002224, BizMath.bor(0x34020000, P.fixed_evil_rng), 'BiosROM')
@@ -332,8 +353,8 @@ P.fixed_evil_rng = 0x7FFF
 
 -- NOTE(sestren): These are configurable
 P.scale = 1
-P.idle_frames = 60
-P.cycle_frames = 30
+P.idle_frames = 90
+P.cycle_frames = 60
 
 P.canvas_width = P.scale * 320
 P.canvas_height = P.scale * 56
