@@ -271,6 +271,7 @@ P.draw = function()
 end
 
 P.hamming_weight = function(__a)
+    -- A number's hamming weight is the number of 1s it has in binary form.
     local result = 0
     while __a > 0 do
         result = result + BizMath.band(__a, 1)
@@ -280,7 +281,10 @@ P.hamming_weight = function(__a)
 end
 
 P.biased_random = function(__maximum, __trials)
-    -- Out of one or more trials, choose the lowest number by hamming weight
+    -- Out of one or more trials, choose the lowest number by hamming weight.
+    -- In SOTN, a lot of RNG checks compare against 0 or other low numbers
+    -- and a large variety of ranges, so numbers with low hamming weights
+    -- will tend to be more "interesting" to return.
     local result = __maximum
     for i = 1, __trials do
         local new = math.random(0x00, __maximum)
