@@ -6,7 +6,8 @@ UniversalLibraryCard = P
 -- 0x0973F4 for y position
 P.stages = {
     ['Castle Entrance'] = {
-        stage_id = 0x41,
+        -- stage_id = 0x07,  -- Subsequent Visit -- save rooms have different room IDs
+        stage_id = 0x41,  -- First Visit
         tilemap = 0x917F,
         palette = 0x9235,
         rooms = {
@@ -18,6 +19,24 @@ P.stages = {
                         y = 647,
                     },
                 }
+            },
+            ['Drop Under Portcullis'] = {
+                room_id = 0x01,
+                positions = {
+                    ['Default'] = {
+                        x = 230,
+                        y = 391,
+                    },
+                }
+            },
+            ['Zombie Hallway'] = {
+                room_id = 0x02,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
             },
             ['Holy Mail Room'] = {
                 room_id = 0x03,
@@ -37,11 +56,29 @@ P.stages = {
                     },
                 },
             },
+            ['Attic Hallway'] = {
+                room_id = 0x05,
+                positions = {
+                    ['Default'] = {
+                        x = 1000,
+                        y = 135,
+                    },
+                },
+            },
             ['Attic Entrance'] = {
                 room_id = 0x06,
                 positions = {
                     ['Default'] = {
-                        x = 20,
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['Merman Room'] = {
+                room_id = 0x07,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
                         y = 135,
                     },
                 },
@@ -51,6 +88,15 @@ P.stages = {
                 positions = {
                     ['Default'] = {
                         x = 225,
+                        y = 135,
+                    },
+                },
+            },
+            ['Warg Hallway'] = {
+                room_id = 0x09,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
                         y = 135,
                     },
                 },
@@ -65,6 +111,24 @@ P.stages = {
                     ['Right Side'] = {
                         x = 210,
                         y = 135,
+                    },
+                },
+            },
+            ['Meeting Room with Death'] = {
+                room_id = 0x0B,
+                positions = {
+                    ['Default'] = {
+                        x = 34,
+                        y = 391,
+                    },
+                },
+            },
+            ['Stairwell after Death'] = {
+                room_id = 0x0C,
+                positions = {
+                    ['Default'] = {
+                        x = 28,
+                        y = 647,
                     },
                 },
             },
@@ -112,6 +176,15 @@ P.stages = {
                     },
                 },
             },
+            ['Life Max Up Room'] = {
+                room_id = 0x11,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
         },
     },
     ['Alchemy Laboratory'] = {
@@ -119,11 +192,221 @@ P.stages = {
         tilemap = 0x92DD,
         palette = 0x937D,
         rooms = {
-            ['Default'] = {
+            ['Bat Card Room'] = {
+                room_id = 0x00,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['Exit to Royal Chapel'] = {
+                room_id = 0x01,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['Blue Door Hallway'] = {
+                room_id = 0x02,
+                positions = {
+                    ['Left Side'] = {
+                        x = 78,
+                        y = 151,
+                    },
+                    ['Right Side'] = {
+                        x = 471,
+                        y = 135,
+                    },
+                },
+            },
+            ['Bloody Zombie Hallway'] = {
+                room_id = 0x03,
+                positions = {
+                    ['Default'] = {
+                        x = 20,
+                        y = 135,
+                    },
+                },
+            },
+            ['Cannon Room'] = {
+                room_id = 0x04,
+                positions = {
+                    ['Left Side'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                    ['Right Side'] = {
+                        x = 210,
+                        y = 135,
+                    },
+                },
+            },
+            ['Cloth Cape Room'] = {
+                room_id = 0x05,
+                positions = {
+                    ['Default'] = {
+                        x = 230,
+                        y = 135,
+                    },
+                },
+            },
+            ['Sunglasses Room'] = {
+                room_id = 0x06,
+                positions = {
+                    ['Default'] = {
+                        x = 230,
+                        y = 135,
+                    },
+                },
+            },
+            ['Glass Vat Room'] = {
+                room_id = 0x07,
+                positions = {
+                    ['Default'] = {
+                        x = 60,
+                        y = 183,
+                    },
+                },
+            },
+            ['Skill of Wolf Room'] = {
+                room_id = 0x08,
+                positions = {
+                    ['Default'] = {
+                        x = 25,
+                        y = 135,
+                    },
+                },
+            },
+            ['Heart Max Up Room'] = {
+                room_id = 0x09,
+                positions = {
+                    ['Default'] = {
+                        x = 230,
+                        y = 135,
+                    },
+                },
+            },
+            ['Entryway'] = {
                 room_id = 0x0A,
                 positions = {
                     ['Default'] = {
-                        x = 718,
+                        x = 720,
+                        y = 135,
+                    },
+                },
+            },
+            ['Tall Spittlebone Room'] = {
+                room_id = 0x0B,
+                positions = {
+                    ['Default'] = {
+                        x = 230,
+                        y = 903,
+                    },
+                },
+            },
+            ['Empty Zig Zag Room'] = {
+                room_id = 0x0C,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 391,
+                    },
+                },
+            },
+            ['Short Zig Zag Room'] = {
+                room_id = 0x0D,
+                positions = {
+                    ['Default'] = {
+                        x = 230,
+                        y = 391,
+                    },
+                },
+            },
+            ['Tall Zig Zag Room'] = {
+                room_id = 0x0E,
+                positions = {
+                    ['Default'] = {
+                        x = 230,
+                        y = 647,
+                    },
+                },
+            },
+            ['Secret Life Max Up Room'] = {
+                room_id = 0x0F,
+                positions = {
+                    ['Default'] = {
+                        x = 127,
+                        y = 71,
+                    },
+                },
+            },
+            ['Slogra and Gaibon Room'] = {
+                room_id = 0x10,
+                positions = {
+                    ['Left Side'] = {
+                        x = 60,
+                        y = 135,
+                    },
+                    ['Alcove'] = {
+                        x = 980,
+                        y = 135,
+                    },
+                },
+            },
+            ['Box Puzzle Room'] = {
+                room_id = 0x11,
+                positions = {
+                    ['Default'] = {
+                        x = 480,
+                        y = 391,
+                    },
+                },
+            },
+            ['Red Skeleton Room'] = {
+                room_id = 0x12,
+                positions = {
+                    ['Default'] = {
+                        x = 590,
+                        y = 455,
+                    },
+                },
+            },
+            ['Room After Slogra and Gaibon'] = {
+                room_id = 0x13,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 647,
+                    },
+                },
+            },
+            ['Exit to Marble Gallery'] = {
+                room_id = 0x14,
+                positions = {
+                    ['Default'] = {
+                        x = 20,
+                        y = 391,
+                    },
+                },
+            },
+            ['Passage to Elevator'] = {
+                room_id = 0x15,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['Elevator Shaft'] = {
+                room_id = 0x16,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
                         y = 135,
                     },
                 },
