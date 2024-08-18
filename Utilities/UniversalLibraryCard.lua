@@ -5,32 +5,40 @@ UniversalLibraryCard = P
 -- 0x0973F0 for x position
 -- 0x0973F4 for y position
 P.stages = {
-    ['Castle Entrance'] = {
-        -- stage_id = 0x07,  -- Subsequent Visit -- save rooms have different room IDs
-        stage_id = 0x41,  -- First Visit
-        tilemap = 0x917F,
-        palette = 0x9235,
+    ['Marble Gallery'] = {
+        stage_id = 0x00,
+        tilemap = 0x7E5D,
+        palette = 0x7F16,
         rooms = {
-            ['After Drawbridge'] = {
+            ['S-Shaped Hallways'] = {
                 room_id = 0x00,
                 positions = {
                     ['Default'] = {
-                        x = 152,
+                        x = 40,
                         y = 647,
                     },
-                }
+                },
             },
-            ['Drop Under Portcullis'] = {
+            ['Tall Stained Glass Windows'] = {
                 room_id = 0x01,
                 positions = {
                     ['Default'] = {
-                        x = 230,
-                        y = 391,
+                        x = 40,
+                        y = 647,
                     },
-                }
+                },
             },
-            ['Zombie Hallway'] = {
+            ['Spirit Orb Room'] = {
                 room_id = 0x02,
+                positions = {
+                    ['Default'] = {
+                        x = 164,
+                        y = 183,
+                    },
+                },
+            },
+            ['Stained Glass Corner'] = {
+                room_id = 0x03,
                 positions = {
                     ['Default'] = {
                         x = 40,
@@ -38,34 +46,29 @@ P.stages = {
                     },
                 },
             },
-            ['Holy Mail Room'] = {
-                room_id = 0x03,
-                positions = {
-                    ['Default'] = {
-                        x = 224,
-                        y = 135,
-                    },
-                },
-            },
-            ['Attic Staircase'] = {
+            ['Beneath Dropoff'] = {
                 room_id = 0x04,
                 positions = {
                     ['Default'] = {
-                        x = 228,
-                        y = 391,
+                        x = 162,
+                        y = 103,
                     },
                 },
             },
-            ['Attic Hallway'] = {
+            ['Dropoff'] = {
                 room_id = 0x05,
                 positions = {
-                    ['Default'] = {
-                        x = 1000,
+                    ['Left Side'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                    ['Right Side'] = {
+                        x = 703,
                         y = 135,
                     },
                 },
             },
-            ['Attic Entrance'] = {
+            ['Entrance'] = {
                 room_id = 0x06,
                 positions = {
                     ['Default'] = {
@@ -74,7 +77,7 @@ P.stages = {
                     },
                 },
             },
-            ['Merman Room'] = {
+            ['Stopwatch Room'] = {
                 room_id = 0x07,
                 positions = {
                     ['Default'] = {
@@ -83,101 +86,173 @@ P.stages = {
                     },
                 },
             },
-            ['Jewel Sword Room'] = {
+            ['Long Hallway'] = {
                 room_id = 0x08,
                 positions = {
                     ['Default'] = {
-                        x = 225,
+                        x = 40,
                         y = 135,
                     },
                 },
             },
-            ['Warg Hallway'] = {
+            ['Clock Room'] = {
                 room_id = 0x09,
                 positions = {
                     ['Default'] = {
                         x = 40,
-                        y = 135,
+                        y = 151,
                     },
                 },
             },
-            ['Shortcut to Underground Caverns'] = {
+            ['Left of Clock Room'] = {
                 room_id = 0x0A,
                 positions = {
-                    ['Left Side'] = {
+                    ['Default'] = {
                         x = 40,
-                        y = 135,
-                    },
-                    ['Right Side'] = {
-                        x = 210,
-                        y = 135,
+                        y = 151,
                     },
                 },
             },
-            ['Meeting Room with Death'] = {
+            ['Empty Room'] = {
                 room_id = 0x0B,
                 positions = {
                     ['Default'] = {
-                        x = 34,
-                        y = 391,
+                        x = 40,
+                        y = 135,
                     },
                 },
             },
-            ['Stairwell after Death'] = {
+            ['Blue Door Room'] = {
                 room_id = 0x0C,
-                positions = {
-                    ['Default'] = {
-                        x = 28,
-                        y = 647,
-                    },
-                },
-            },
-            ['Gargoyle Room'] = {
-                room_id = 0x0D,
-                positions = {
-                    ['Default'] = {
-                        x = 220,
-                        y = 135,
-                    },
-                },
-            },
-            ['Heart Max Up Room'] = {
-                room_id = 0x0E,
-                positions = {
-                    ['Default'] = {
-                        x = 234,
-                        y = 135,
-                    },
-                },
-            },
-            ['Cube of Zoe Room'] = {
-                room_id = 0x0F,
-                positions = {
-                    ['Entryway'] = {
-                        x = 478,
-                        y = 647,
-                    },
-                    ['Next to Pressure Plate'] = {
-                        x = 472,
-                        y = 135,
-                    },
-                },
-            },
-            ['Shortcut to Warp'] = {
-                room_id = 0x10,
                 positions = {
                     ['Left Side'] = {
                         x = 40,
                         y = 135,
                     },
                     ['Right Side'] = {
-                        x = 216,
+                        x = 316,
+                        y = 167,
+                    },
+                },
+            },
+            ['Pathway after Left Statue'] = {
+                room_id = 0x0D,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
                         y = 135,
                     },
                 },
             },
-            ['Life Max Up Room'] = {
+            ['Pathway after Right Statue'] = {
+                room_id = 0x0E,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['Ouija Table Stairway'] = {
+                room_id = 0x0F,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 647,
+                    },
+                },
+            },
+            ['Three Paths'] = {
+                room_id = 0x10,
+                positions = {
+                    ['Left Path'] = {
+                        x = 73,
+                        y = 445,
+                    },
+                    ['Middle Path'] = {
+                        x = 102,
+                        y = 301,
+                    },
+                    ['Right Path'] = {
+                        x = 182,
+                        y = 445,
+                    },
+                },
+            },
+            ['Stairwell to Underground Caverns'] = {
                 room_id = 0x11,
+                positions = {
+                    ['Default'] = {
+                        x = 20,
+                        y = 135,
+                    },
+                },
+            },
+            ['Slinger Staircase'] = {
+                room_id = 0x12,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['Right of Clock Room'] = {
+                room_id = 0x13,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 151,
+                    },
+                },
+            },
+            ['Gravity Boots Room'] = {
+                room_id = 0x14,
+                positions = {
+                    ['Default'] = {
+                        x = 600,
+                        y = 183,
+                    },
+                },
+            },
+            ['Elevator Room'] = {
+                room_id = 0x15,
+                positions = {
+                    ['Default'] = {
+                        x = 129,
+                        y = 151,
+                    },
+                },
+            },
+            ['Powerup Room'] = {
+                room_id = 0x16,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['Beneath Left Trapdoor'] = {
+                room_id = 0x17,
+                positions = {
+                    ['Default'] = {
+                        x = 78,
+                        y = 119,
+                    },
+                },
+            },
+            ['Beneath Right Trapdoor'] = {
+                room_id = 0x18,
+                positions = {
+                    ['Default'] = {
+                        x = 140,
+                        y = 119,
+                    },
+                },
+            },
+            ['Alucart Room'] = {
+                room_id = 0x19,
                 positions = {
                     ['Default'] = {
                         x = 40,
@@ -412,7 +487,189 @@ P.stages = {
                 },
             },
         }
-    }
+    },
+    ['Castle Entrance'] = {
+        -- stage_id = 0x07,  -- Subsequent Visit -- save rooms have different room IDs
+        stage_id = 0x41,  -- First Visit
+        tilemap = 0x917F,
+        palette = 0x9235,
+        rooms = {
+            ['After Drawbridge'] = {
+                room_id = 0x00,
+                positions = {
+                    ['Default'] = {
+                        x = 152,
+                        y = 647,
+                    },
+                },
+            },
+            ['Drop Under Portcullis'] = {
+                room_id = 0x01,
+                positions = {
+                    ['Default'] = {
+                        x = 230,
+                        y = 391,
+                    },
+                },
+            },
+            ['Zombie Hallway'] = {
+                room_id = 0x02,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['Holy Mail Room'] = {
+                room_id = 0x03,
+                positions = {
+                    ['Default'] = {
+                        x = 224,
+                        y = 135,
+                    },
+                },
+            },
+            ['Attic Staircase'] = {
+                room_id = 0x04,
+                positions = {
+                    ['Default'] = {
+                        x = 228,
+                        y = 391,
+                    },
+                },
+            },
+            ['Attic Hallway'] = {
+                room_id = 0x05,
+                positions = {
+                    ['Default'] = {
+                        x = 1000,
+                        y = 135,
+                    },
+                },
+            },
+            ['Attic Entrance'] = {
+                room_id = 0x06,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['Merman Room'] = {
+                room_id = 0x07,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['Jewel Sword Room'] = {
+                room_id = 0x08,
+                positions = {
+                    ['Default'] = {
+                        x = 225,
+                        y = 135,
+                    },
+                },
+            },
+            ['Warg Hallway'] = {
+                room_id = 0x09,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['Shortcut to Underground Caverns'] = {
+                room_id = 0x0A,
+                positions = {
+                    ['Left Side'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                    ['Right Side'] = {
+                        x = 210,
+                        y = 135,
+                    },
+                },
+            },
+            ['Meeting Room with Death'] = {
+                room_id = 0x0B,
+                positions = {
+                    ['Default'] = {
+                        x = 34,
+                        y = 391,
+                    },
+                },
+            },
+            ['Stairwell after Death'] = {
+                room_id = 0x0C,
+                positions = {
+                    ['Default'] = {
+                        x = 28,
+                        y = 647,
+                    },
+                },
+            },
+            ['Gargoyle Room'] = {
+                room_id = 0x0D,
+                positions = {
+                    ['Default'] = {
+                        x = 220,
+                        y = 135,
+                    },
+                },
+            },
+            ['Heart Max Up Room'] = {
+                room_id = 0x0E,
+                positions = {
+                    ['Default'] = {
+                        x = 234,
+                        y = 135,
+                    },
+                },
+            },
+            ['Cube of Zoe Room'] = {
+                room_id = 0x0F,
+                positions = {
+                    ['Entryway'] = {
+                        x = 478,
+                        y = 647,
+                    },
+                    ['Next to Pressure Plate'] = {
+                        x = 472,
+                        y = 135,
+                    },
+                },
+            },
+            ['Shortcut to Warp'] = {
+                room_id = 0x10,
+                positions = {
+                    ['Left Side'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                    ['Right Side'] = {
+                        x = 216,
+                        y = 135,
+                    },
+                },
+            },
+            ['Life Max Up Room'] = {
+                room_id = 0x11,
+                positions = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+        },
+    },
 }
 
 P.get_stage_options = function()
