@@ -391,9 +391,13 @@ P.stages = {
             ['(0D) Elevator Shaft'] = {
                 room_id = 0x0D,
                 options = {
-                    ['Default'] = {
+                    ['Main'] = {
                         x = 336,
                         y = 743,
+                    },
+                    ['Elevator Shaft'] = {
+                        x = 366,
+                        y = 808,
                     },
                 },
             },
@@ -1533,6 +1537,15 @@ P.stages = {
                     },
                 },
             },
+            ['(02) Room ID 02'] = {
+                room_id = 0x02,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
         },
     },
     ['Underground Caverns'] = {
@@ -1546,6 +1559,51 @@ P.stages = {
                     ['Default'] = {
                         x = 97,
                         y = 72,
+                    },
+                },
+            },
+            ['(01) Hidden Crystal Entrance'] = {
+                room_id = 0x01,
+                options = {
+                    ['Default'] = {
+                        x = 210,
+                        y = 647,
+                    },
+                },
+            },
+            ['(02) Crystal Bend'] = {
+                room_id = 0x02,
+                options = {
+                    ['Default'] = {
+                        x = 220,
+                        y = 391,
+                    },
+                },
+            },
+            ['(0C) Room ID 12'] = {
+                room_id = 0x0C,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['(10) Room ID 16'] = {
+                room_id = 0x10,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['(19) Left Ferryman Route'] = {
+                room_id = 0x19,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
                     },
                 },
             },
@@ -1574,6 +1632,15 @@ P.stages = {
                     },
                 },
             },
+            ['(04) Passageway Between Arena and Royal Chapel'] = {
+                room_id = 0x04,
+                options = {
+                    ['Default'] = {
+                        x = 240,
+                        y = 135,
+                    },
+                },
+            },
             -- ['(FF) XXX'] = {
             --     room_id = 0xFF,
             --     options = {
@@ -1590,7 +1657,7 @@ P.stages = {
         tilemap = 0x9554,
         palette = 0x95DE,
         options = {
-            ['(00) XXX'] = {
+            ['(00) Upper Attic'] = {
                 room_id = 0x00,
                 options = {
                     ['Default'] = {
@@ -1599,17 +1666,83 @@ P.stages = {
                     },
                 },
             },
+            ['(01) Lower Attic'] = {
+                room_id = 0x01,
+                options = {
+                    ['Default'] = {
+                        x = 240,
+                        y = 104,
+                    },
+                },
+            },
+            ['(02) Throne Room and Surrounding Area'] = {
+                room_id = 0x02,
+                options = {
+                    ['Inside Doorway'] = {
+                        x = 1550,
+                        y = 904,
+                    },
+                    ['Bottom of Stairs'] = {
+                        x = 1950,
+                        y = 1160,
+                    },
+                },
+            },
+            ['(03) Ghost Card Room'] = {
+                room_id = 0x03,
+                options = {
+                    ['Default'] = {
+                        x = 30,
+                        y = 392,
+                    },
+                },
+            },
+            ['(04) Bend'] = {
+                room_id = 0x04,
+                options = {
+                    ['Default'] = {
+                        x = 100,
+                        y = 168,
+                    },
+                },
+            },
+            ['(05) Falchion Room'] = {
+                room_id = 0x05,
+                options = {
+                    ['Default'] = {
+                        x = 100,
+                        y = 168,
+                    },
+                },
+            },
+            ['(06) Lion Torch Platform'] = {
+                room_id = 0x06,
+                options = {
+                    ['Default'] = {
+                        x = 60,
+                        y = 136,
+                    },
+                },
+            },
+            ['(07) Exit to Clock Tower'] = {
+                room_id = 0x07,
+                options = {
+                    ['Default'] = {
+                        x = 190,
+                        y = 424,
+                    },
+                },
+            },
+            ['(08) Tyrfing Room'] = {
+                room_id = 0x08,
+                options = {
+                    ['Default'] = {
+                        x = 20,
+                        y = 136,
+                    },
+                },
+            },
         },
-            -- ['(FF) XXX'] = {
-            --     room_id = 0xFF,
-            --     options = {
-            --         ['Default'] = {
-            --             x = 40,
-            --             y = 135,
-            --         },
-            --     },
-            -- },
-        -- },
     },
     ['Alchemy Laboratory'] = {
         stage_id = 0x0C,
@@ -1806,6 +1939,10 @@ P.stages = {
                         x = 40,
                         y = 647,
                     },
+                    ['Unreachable'] = {
+                        x = 40,
+                        y = 391,
+                    },
                 },
             },
             ['(14) Exit to Marble Gallery'] = {
@@ -1846,13 +1983,112 @@ P.stages = {
                 room_id = 0x00,
                 options = {
                     ['Default'] = {
-                        x = 20,
-                        y = 138,
+                        x = 250,
+                        y = 136,
                     },
                 },
             },
-            ['(FF) XXX'] = {
-                room_id = 0xFF,
+            ['(01) Pointing Statues II'] = {
+                room_id = 0x01,
+                options = {
+                    ['Default'] = {
+                        x = 740,
+                        y = 135,
+                    },
+                },
+            },
+            ['(02) Healing Mail Room'] = {
+                room_id = 0x02,
+                options = {
+                    ['Default'] = {
+                        x = 240,
+                        y = 135,
+                    },
+                },
+            },
+            ['(03) Pointing Statues I'] = {
+                room_id = 0x03,
+                options = {
+                    ['Default'] = {
+                        x = 1760,
+                        y = 392,
+                    },
+                },
+            },
+            ['(04) XXX'] = {
+                room_id = 0x04,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['(05) Star Flail Room'] = {
+                room_id = 0x05,
+                options = {
+                    ['Default'] = {
+                        x = 240,
+                        y = 135,
+                    },
+                },
+            },
+            ['(06) XXX'] = {
+                room_id = 0x06,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['(07) XXX'] = {
+                room_id = 0x07,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['(08) XXX'] = {
+                room_id = 0x08,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['(09) XXX'] = {
+                room_id = 0x09,
+                options = {
+                    ['Default'] = {
+                        x = 300,
+                        y = 392,
+                    },
+                },
+            },
+            ['(0A) XXX'] = {
+                room_id = 0x0A,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['(0B) XXX'] = {
+                room_id = 0x0B,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['(0C) XXX'] = {
+                room_id = 0x0C,
                 options = {
                     ['Default'] = {
                         x = 40,
@@ -2223,6 +2459,187 @@ P.stages = {
     -- Cave,
     -- AntiChapel,
     -- ReverseEntrance,
+    ['Reverse Entrance'] = {
+        stage_id = 0x27,
+        tilemap = 0x917F,
+        palette = 0x9235,
+        options = {
+            ['(00) After Drawbridge'] = {
+                room_id = 0x00,
+                options = {
+                    ['Default'] = {
+                        x = 152,
+                        y = 647,
+                    },
+                },
+            },
+            ['(01) Drop Under Portcullis'] = {
+                room_id = 0x01,
+                options = {
+                    ['Default'] = {
+                        x = 230,
+                        y = 391,
+                    },
+                },
+            },
+            ['(02) Zombie Hallway'] = {
+                room_id = 0x02,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['(03) Holy Mail Room'] = {
+                room_id = 0x03,
+                options = {
+                    ['Default'] = {
+                        x = 224,
+                        y = 135,
+                    },
+                },
+            },
+            ['(04) Attic Staircase'] = {
+                room_id = 0x04,
+                options = {
+                    ['Default'] = {
+                        x = 228,
+                        y = 391,
+                    },
+                },
+            },
+            ['(05) Attic Hallway'] = {
+                room_id = 0x05,
+                options = {
+                    ['Default'] = {
+                        x = 1000,
+                        y = 135,
+                    },
+                },
+            },
+            ['(06) Attic Entrance'] = {
+                room_id = 0x06,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['(07) Merman Room'] = {
+                room_id = 0x07,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['(08) Jewel Sword Room'] = {
+                room_id = 0x08,
+                options = {
+                    ['Default'] = {
+                        x = 225,
+                        y = 135,
+                    },
+                },
+            },
+            ['(09) Warg Hallway'] = {
+                room_id = 0x09,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+            ['(0A) Shortcut to Underground Caverns'] = {
+                room_id = 0x0A,
+                options = {
+                    ['Left Side'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                    ['Right Side'] = {
+                        x = 210,
+                        y = 135,
+                    },
+                },
+            },
+            ['(0B) Meeting Room with Death'] = {
+                room_id = 0x0B,
+                options = {
+                    ['Default'] = {
+                        x = 34,
+                        y = 391,
+                    },
+                },
+            },
+            ['(0C) Stairwell after Death'] = {
+                room_id = 0x0C,
+                options = {
+                    ['Default'] = {
+                        x = 28,
+                        y = 647,
+                    },
+                },
+            },
+            ['(0D) Gargoyle Room'] = {
+                room_id = 0x0D,
+                options = {
+                    ['Default'] = {
+                        x = 220,
+                        y = 135,
+                    },
+                },
+            },
+            ['(0E) Heart Max Up Room'] = {
+                room_id = 0x0E,
+                options = {
+                    ['Default'] = {
+                        x = 234,
+                        y = 135,
+                    },
+                },
+            },
+            ['(0F) Cube of Zoe Room'] = {
+                room_id = 0x0F,
+                options = {
+                    ['Entryway'] = {
+                        x = 478,
+                        y = 647,
+                    },
+                    ['Next to Pressure Plate'] = {
+                        x = 472,
+                        y = 135,
+                    },
+                },
+            },
+            ['(10) Shortcut to Warp'] = {
+                room_id = 0x10,
+                options = {
+                    ['Left Side'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                    ['Right Side'] = {
+                        x = 216,
+                        y = 135,
+                    },
+                },
+            },
+            ['(11) Life Max Up Room'] = {
+                room_id = 0x11,
+                options = {
+                    ['Default'] = {
+                        x = 40,
+                        y = 135,
+                    },
+                },
+            },
+        },
+    },
     -- ReverseCastleCenter,
     -- ReverseCaverns,
     -- ReverseColosseum,
@@ -2459,7 +2876,7 @@ P.get_position_options = function()
 end
 
 P.update = function()
-    -- Check stage options
+    -- Update drop-down options
     local stage = forms.gettext(P.stage_input)
     if (
         stage ~= P.selected_stage
@@ -2467,7 +2884,6 @@ P.update = function()
         forms.setdropdownitems(P.room_input, P.get_room_options(), true)
         forms.setdropdownitems(P.position_input, P.get_position_options(), true)
     end
-    -- Check room options
     local room = forms.gettext(P.room_input)
     if (
         stage ~= P.selected_stage or
@@ -2475,7 +2891,6 @@ P.update = function()
     ) then
         forms.setdropdownitems(P.position_input, P.get_position_options(), true)
     end
-    -- Check position options
     local position = forms.gettext(P.position_input)
     if (
         stage ~= P.selected_stage or
@@ -2528,7 +2943,7 @@ P.update = function()
     memory.write_u16_le(0x0A25E6, 8 * room_id)
     memory.write_u16_le(0x0A25E2, x)
     memory.write_u16_le(0x0A25E4, y)
-    -- Remember selection
+    -- Remember selections
     P.selected_stage = stage
     P.selected_room = room
     P.selected_position = position
