@@ -47,13 +47,15 @@ P.draw = function()
     P.text(0, 2, "#. index..... seed.... rng. mask roll. note...", 0xffffffff, 0xff000000)
     -- Show all RNG calls this frame
     for i=1,P.evil_delta do
-        P.text( 0, 3 + i, P.RNG[i].id, 0xff999999)
-        P.text( 3, 3 + i, P.RNG[i].index, 0xff999999)
-        P.text( 13, 3 + i, SotnCore.hex(P.RNG[i].seed, 8), 0xff999999)
-        P.text( 21, 3 + i, SotnCore.hex(P.RNG[i].rng, 4), 0xff999999)
-        P.text( 26, 3 + i, SotnCore.hex(P.RNG[i].mask, 4), 0xff999999)
-        P.text( 31, 3 + i, P.RNG[i].roll, 0xff999999)
-        P.text( 36, 3 + i, P.RNG[i].note, 0xff999999)
+        if P.RNG[i] ~= nil then
+            P.text( 0, 3 + i, P.RNG[i].id, 0xff999999)
+            P.text( 3, 3 + i, P.RNG[i].index, 0xff999999)
+            P.text( 13, 3 + i, SotnCore.hex(P.RNG[i].seed, 8), 0xff999999)
+            P.text( 21, 3 + i, SotnCore.hex(P.RNG[i].rng, 4), 0xff999999)
+            P.text( 26, 3 + i, SotnCore.hex(P.RNG[i].mask, 4), 0xff999999)
+            P.text( 31, 3 + i, P.RNG[i].roll, 0xff999999)
+            P.text( 36, 3 + i, P.RNG[i].note, 0xff999999)
+        end
     end
     -- Refresh
     P.canvas.Refresh()
@@ -84,15 +86,17 @@ P.onframeend = function()
     local prev_index = P.evil_index - P.evil_delta
     local seed = P.seed_from_index(prev_index, SotnCore.Tumblers.EvilSeed)
     for i=1,P.evil_delta do
-        seed = SotnCore.advance_tumbler(SotnCore.Tumblers.EvilSeed, 1, seed)
-        P.RNG[i].id = i
-        P.RNG[i].index = SotnCore.evil_seed_index(seed)
-        P.RNG[i].seed = seed
-        -- NOTE: See spec for rand() in psx-spx
-        P.RNG[i].rng = BizMath.band(0x7fff, BizMath.rshift(seed, 0x10))
-        P.RNG[i].mask = 0xff
-        P.RNG[i].roll = BizMath.band(P.RNG[i].mask, P.RNG[i].rng)
-        P.RNG[i].note = '-'
+        if P.RNG[i] ~= nil then
+            seed = SotnCore.advance_tumbler(SotnCore.Tumblers.EvilSeed, 1, seed)
+            P.RNG[i].id = i
+            P.RNG[i].index = SotnCore.evil_seed_index(seed)
+            P.RNG[i].seed = seed
+            -- NOTE: See spec for rand() in psx-spx
+            P.RNG[i].rng = BizMath.band(0x7fff, BizMath.rshift(seed, 0x10))
+            P.RNG[i].mask = 0xff
+            P.RNG[i].roll = BizMath.band(P.RNG[i].mask, P.RNG[i].rng)
+            P.RNG[i].note = '-'
+        end
     end
     -- Crit check
     local crit_chance = 0x10
