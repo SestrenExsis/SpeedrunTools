@@ -2,17 +2,25 @@
 local P = {}
 ManageLevelUpsAndStats = P
 
-P.hpIncreases = {1, 3, 6, 10, 20, 30, 40, 50, 100, 200}
+P.settings = {
+    sampleSize = 10000,
+}
 
 P.getStats = function()
     -- Get selected inputs
-    local nameCode = forms.gettext(P.input.nameCode)
-    local startingHearts = forms.gettext(P.input.startingHearts)
-    local defeatDraculaTime = forms.gettext(P.input.defeatDraculaTime)
-    local finalHealth = forms.gettext(P.input.finalHealth)
-    local finalSubweapon = forms.gettext(P.input.finalSubweapon)
-    local lifeMaxUps = forms.gettext(P.input.lifeMaxUps)
-    local heartMaxUps = forms.gettext(P.input.heartMaxUps)
+    local nameCode = forms.gettext(P.ui.nameCode)
+    local startingHearts = forms.gettext(P.ui.startingHearts)
+    local defeatDraculaTime = forms.gettext(P.ui.defeatDraculaTime)
+    local finalHealth = forms.gettext(P.ui.finalHealth)
+    local finalSubweapon = forms.gettext(P.ui.finalSubweapon)
+    local lifeMaxUps = forms.gettext(P.ui.lifeMaxUps)
+    if lifeMaxUps == nil or #lifeMaxUps < 2 then
+        lifeMaxUps = P.option.lifeMaxUps[1]
+    end
+    local heartMaxUps = forms.gettext(P.ui.heartMaxUps)
+    if heartMaxUps == nil or #heartMaxUps < 2 then
+        heartMaxUps = P.option.heartMaxUps[1]
+    end
     -- Starting stats
     local hp = 70
     local mp = 20
@@ -115,7 +123,10 @@ end
 
 P.getUpgrades = function()
     local fortune = 0
-    local level = forms.gettext(P.input.level)
+    local level = forms.gettext(P.ui.level)
+    if level == nil or #level < 2 then
+        level = P.option.level[1]
+    end
     local levelUps = tonumber(string.sub(level, -2))
     local strength = 0
     local constitution = 0
@@ -159,7 +170,7 @@ P.getUpgrades = function()
             end
             statCount = statCount + 1
         end
-        fortune = fortune + statCount + mpIncrease
+        fortune = fortune + statCount + mpBonus
     end
     local result = {
         strength = strength,
@@ -174,58 +185,120 @@ P.getUpgrades = function()
     return result
 end
 
-P.update = function()
-    local nameCode = forms.gettext(P.input.nameCode)
-    local startingHearts = forms.gettext(P.input.startingHearts)
-    local defeatDraculaTime = forms.gettext(P.input.defeatDraculaTime)
-    local finalHealth = forms.gettext(P.input.finalHealth)
-    local finalHearts = forms.gettext(P.input.finalHearts)
-    local finalSubweapon = forms.gettext(P.input.finalSubweapon)
-    local level = forms.gettext(P.input.level)
-    local lifeMaxUps = forms.gettext(P.input.lifeMaxUps)
-    local heartMaxUps = forms.gettext(P.input.heartMaxUps)
-    if (
-        nameCode ~= P.selection.nameCode or
-        startingHearts ~= P.selection.startingHearts or
-        defeatDraculaTime ~= P.selection.defeatDraculaTime or
-        finalHealth ~= P.selection.finalHealth or
-        finalHearts ~= P.selection.finalHearts or
-        finalSubweapon ~= P.selection.finalSubweapon or
-        level ~= P.selection.level or
-        lifeMaxUps ~= P.selection.lifeMaxUps or
-        heartMaxUps ~= P.selection.heartMaxUps
-    ) then
-        local stats = P.getStats()
-        local upgrades = P.getUpgrades()
-        for i = 0, 999 do
-            P.getUpgrades()
-        end
-        -- Update displays
-        local labelText = ''
-        labelText = labelText..'   STR = '..string.sub('  '..stats.strength, -3)..' + '..string.sub('  '..upgrades.strength, -3)..'\n'
-        labelText = labelText..'   CON = '..string.sub('  '..stats.constitution, -3)..' + '..string.sub('  '..upgrades.constitution, -3)..'\n'
-        labelText = labelText..'   INT = '..string.sub('  '..stats.intelligence, -3)..' + '..string.sub('  '..upgrades.intelligence, -3)..'\n'
-        labelText = labelText..'   LCK = '..string.sub('  '..stats.luck, -3)..' + '..string.sub('  '..upgrades.luck, -3)..'\n'
-        labelText = labelText..'    HP = '..string.sub('  '..stats.hp, -3)..' + '..string.sub('  '..upgrades.hp, -3)..'\n'
-        labelText = labelText..'    MP = '..string.sub('  '..stats.mp, -3)..' + '..string.sub('  '..upgrades.mp, -3)..'\n'
-        labelText = labelText..'Hearts = '..string.sub('  '..stats.hearts, -3)..' + '..string.sub('  '..upgrades.hearts, -3)..'\n'
-        forms.settext(P.statsLabel, labelText)
-        local levelUps = tonumber(string.sub(level, -2))
+P.getSamples = function(_sampleCount)
+    local result = {}
+    for i = 1, _sampleCount do
+        local sample = P.getUpgrades()
+        table.insert(result, sample)
     end
-    -- Update local variables
-    P.selection.nameCode = nameCode
-    P.selection.startingHearts = startingHearts
-    P.selection.defeatDraculaTime = defeatDraculaTime
-    P.selection.finalHealth = finalHealth
-    P.selection.finalHearts = finalHearts
-    P.selection.finalSubweapon = finalSubweapon
-    P.selection.level = level
-    P.selection.lifeMaxUps = lifeMaxUps
-    P.selection.heartMaxUps = heartMaxUps
+    return result
+end
+
+P.sortTable = function(_table, _sortKey)
+    table.sort(_table, function(a, b) return a[_sortKey] < b[_sortKey] end)
+end
+
+P.regenerateSamples = function()
+    local rolls = forms.gettext(P.ui.rolls)
+    local sortKey = 'fortune'
+    if rolls == P.option.rolls.strengthBottom10 then
+        sortKey = 'strength'
+    elseif rolls == P.option.rolls.strengthMiddle10 then
+        sortKey = 'strength'
+    elseif rolls == P.option.rolls.strengthTop10 then
+        sortKey = 'strength'
+    end
+    P.samples = P.getSamples(P.settings.sampleSize)
+    P.sortTable(P.samples, sortKey)
+    P.selection.level = forms.gettext(P.ui.level)
+end
+
+P.rollStats = function()
+    if forms.gettext(P.ui.level) ~= P.selection.level then
+        P.regenerateSamples()
+    end
+    local stats = P.getStats()
+    local rolls = forms.gettext(P.ui.rolls)
+    local lowerPercentile = 0.0
+    local percentileRange = 1.0
+    if rolls == P.option.rolls.totalBottom60 then
+        lowerPercentile = 0.0
+        percentileRange = 0.6
+    elseif rolls == P.option.rolls.totalMiddle60 then
+        lowerPercentile = 0.2
+        percentileRange = 0.6
+    elseif rolls == P.option.rolls.totalTop60 then
+        lowerPercentile = 0.8
+        percentileRange = 0.6
+    elseif rolls == P.option.rolls.totalBottom5 then
+        lowerPercentile = 0.0
+        percentileRange = 0.05
+    elseif rolls == P.option.rolls.totalMiddle5 then
+        lowerPercentile = 0.475
+        percentileRange = 0.05
+    elseif rolls == P.option.rolls.totalTop5 then
+        lowerPercentile = 0.925
+        percentileRange = 0.05
+    elseif rolls == P.option.rolls.strengthBottom10 then
+        lowerPercentile = 0.0
+        percentileRange = 0.1
+    elseif rolls == P.option.rolls.strengthMiddle10 then
+        lowerPercentile = 0.45
+        percentileRange = 0.1
+    elseif rolls == P.option.rolls.strengthTop10 then
+        lowerPercentile = 0.9
+        percentileRange = 0.1
+    end
+    local lowerBound = math.floor(1 + lowerPercentile * P.settings.sampleSize)
+    local upperBound = math.floor(lowerBound + percentileRange * P.settings.sampleSize - 1)
+    local upgradeIndex = math.random(lowerBound, upperBound)
+    local upgrades = P.samples[upgradeIndex]
+    if upgrades == nil then
+        upgrades = P.samples[1]
+    end
+    forms.settext(P.ui.strength, math.min(99, stats.strength + upgrades.strength))
+    forms.settext(P.ui.constitution, math.min(99, stats.constitution + upgrades.constitution))
+    forms.settext(P.ui.intelligence, math.min(99, stats.intelligence + upgrades.intelligence))
+    forms.settext(P.ui.luck, math.min(99, stats.luck + upgrades.luck))
+    forms.settext(P.ui.hp, math.min(9999, stats.hp + upgrades.hp))
+    forms.settext(P.ui.mp, stats.mp + upgrades.mp)
+    forms.settext(P.ui.hearts, math.min(9999, stats.hearts + upgrades.hearts))
+end
+
+P.applyStats = function()
+    local level = forms.gettext(P.ui.level)
+    if level == nil or #level < 2 then
+        level = P.option.level[1]
+    end
+    local levelUps = tonumber(string.sub(level, -2))
+	memory.write_u32_le(0x97BE8, levelUps)
+    local xp = P.xpTargets[levelUps]
+	memory.write_u32_le(0x97BEC, xp)
+    local hp = tonumber(forms.gettext(P.ui.hp))
+	memory.write_u32_le(0x97BA0, hp)
+	memory.write_u32_le(0x97BA4, hp)
+    local hearts = tonumber(forms.gettext(P.ui.hearts))
+	memory.write_u32_le(0x97BA8, hearts)
+	memory.write_u32_le(0x97BAC, hearts)
+    local mp = tonumber(forms.gettext(P.ui.mp))
+	memory.write_u32_le(0x97BB0, mp)
+	memory.write_u32_le(0x97BB4, mp)
+    local strength = tonumber(forms.gettext(P.ui.strength))
+	memory.write_u32_le(0x97BB8, strength)
+    local constitution = tonumber(forms.gettext(P.ui.constitution))
+	memory.write_u32_le(0x97BBC, constitution)
+    local intelligence = tonumber(forms.gettext(P.ui.intelligence))
+	memory.write_u32_le(0x97BC0, intelligence)
+    local luck = tonumber(forms.gettext(P.ui.luck))
+	memory.write_u32_le(0x97BC4, luck)
+end
+
+P.update = function()
+    -- ...
 end
 
 P.draw = function()
-    -- 
+    -- ...
 end
 
 P.getOptions = function(_table)
@@ -271,54 +344,107 @@ P.option = {
         holyWater = 'Holy Water subweapon',
         none = 'No subweapon',
     },
-    level = {},
-    lifeMaxUps = {},
-    heartMaxUps = {},
+    level = {
+        [1] = 'Level 01',
+    },
+    lifeMaxUps = {
+        [0] = 'Life Max-Ups = 00',
+    },
+    heartMaxUps = {
+        [0] = 'Heart Max-Ups = 00',
+    },
+    rolls = {
+        unbiased = 'Type 0 - Unbiased sample selection',
+        totalBottom60 = 'Type 1A - Somewhat biased toward lower total rolls',
+        totalMiddle60 = 'Type 1B - Somewhat biased toward average total rolls',
+        totalTop60 = 'Type 1C - Somewhat biased toward higher total rolls',
+        totalBottom5 = 'Type 2A - Extremely biased toward lower total rolls',
+        totalMiddle5 = 'Type 2B - Extremely biased toward average total rolls',
+        totalTop5 = 'Type 2C - Extremely biased toward higher total rolls',
+        -- strengthBottom10 = 'Type 3A - Very biased toward lower STR rolls',
+        -- strengthMiddle10 = 'Type 3B - Very biased toward average STR rolls',
+        -- strengthTop10 = 'Type 3C - Very biased toward higher STR rolls',
+    },
 }
-for level = 1, 99 do
+for level = 2, 99 do
     local digits = string.sub('0'..level, -2)
     P.option.level[level] = 'Level '..digits
 end
-for maxUps = 0, 20 do
+for maxUps = 1, 20 do
     local digits = string.sub('0'..maxUps, -2)
     P.option.lifeMaxUps[maxUps] = 'Life Max-Ups = '..digits
     P.option.heartMaxUps[maxUps] = 'Heart Max-Ups = '..digits
 end
 
-P.form = forms.newform(395, 255, "ManageLevelUpsAndStats", nil)
-P.input = {
+P.form = forms.newform(395, 330, "ManageLevelUpsAndStats", nil)
+P.ui = {
     -- Name Entry and Prologue
-    nameCode = forms.dropdown(P.form, P.getOptions(P.option.nameCode), 8, 8, 240, 24),
-    startingHearts = forms.dropdown(P.form, P.getOptions(P.option.startingHearts), 8, 8 + 1 * 24, 240, 24),
-    defeatDraculaTime = forms.dropdown(P.form, P.getOptions(P.option.defeatDraculaTime), 8, 8 + 2 * 24, 240, 24),
-    finalHealth = forms.dropdown(P.form, P.getOptions(P.option.finalHealth), 8, 8 + 3 * 24, 240, 24),
-    finalHearts = forms.dropdown(P.form, P.getOptions(P.option.finalHearts), 8, 8 + 4 * 24, 240, 24),
-    finalSubweapon = forms.dropdown(P.form, P.getOptions(P.option.finalSubweapon), 8, 8 + 5 * 24, 240, 24),
+    labelPrologue = forms.label(P.form, 'Prologue', 8, 12 + 0 * 24, 240, 18),
+    nameCode = forms.dropdown(P.form, P.getOptions(P.option.nameCode), 8, 8 + 1 * 24, 240, 24),
+    startingHearts = forms.dropdown(P.form, P.getOptions(P.option.startingHearts), 8, 8 + 2 * 24, 240, 24),
+    defeatDraculaTime = forms.dropdown(P.form, P.getOptions(P.option.defeatDraculaTime), 8, 8 + 3 * 24, 240, 24),
+    finalHealth = forms.dropdown(P.form, P.getOptions(P.option.finalHealth), 8, 8 + 4 * 24, 240, 24),
+    finalHearts = forms.dropdown(P.form, P.getOptions(P.option.finalHearts), 8, 8 + 5 * 24, 240, 24),
+    finalSubweapon = forms.dropdown(P.form, P.getOptions(P.option.finalSubweapon), 8, 8 + 6 * 24, 240, 24),
     -- Level-ups and upgrades
-    level = forms.dropdown(P.form, P.getOptions(P.option.level), 8, 8 + 7 * 24, 240, 24),
-    lifeMaxUps = forms.dropdown(P.form, P.getOptions(P.option.lifeMaxUps), 8, 8 + 8 * 24, 240, 24),
-    heartMaxUps = forms.dropdown(P.form, P.getOptions(P.option.heartMaxUps), 8, 8 + 9 * 24, 240, 24),
+    labelUpgrades = forms.label(P.form, 'Upgrades', 8, 12 + 7 * 24, 240, 18),
+    level = forms.dropdown(P.form, P.getOptions(P.option.level), 8, 8 + 8 * 24, 150, 24),
+    lifeMaxUps = forms.dropdown(P.form, P.getOptions(P.option.lifeMaxUps), 8, 8 + 9 * 24, 150, 24),
+    heartMaxUps = forms.dropdown(P.form, P.getOptions(P.option.heartMaxUps), 8, 8 + 10 * 24, 150, 24),
+    -- Rolls
+    labelRolls = forms.label(P.form, 'Sample selection type', 8, 12 + 11 * 24, 240, 18),
+    rolls = forms.dropdown(P.form, P.getOptions(P.option.rolls), 8, 8 + 12 * 24, 280, 24),
+    -- Stats
+    strength = forms.textbox(P.form, '0', 50, 24, 'UNSIGNED', 256, 8 + 1 * 24, false, true),
+    constitution = forms.textbox(P.form, '0', 50, 24, 'UNSIGNED', 256, 8 + 2 * 24, false, true),
+    intelligence = forms.textbox(P.form, '0', 50, 24, 'UNSIGNED', 256, 8 + 3 * 24, false, true),
+    luck = forms.textbox(P.form, '0', 50, 24, 'UNSIGNED', 256, 8 + 4 * 24, false, true),
+    hp = forms.textbox(P.form, '0', 50, 24, 'UNSIGNED', 256, 8 + 5 * 24, false, true),
+    mp = forms.textbox(P.form, '0', 50, 24, 'UNSIGNED', 256, 8 + 6 * 24, false, true),
+    hearts = forms.textbox(P.form, '0', 50, 24, 'UNSIGNED', 256, 8 + 7 * 24, false, true),
+    -- Stat labels
+    labelStats = forms.label(P.form, 'Stats', 256, 12 + 0 * 24, 240, 18),
+    labelStrength = forms.label(P.form, 'STR', 256 + 52, 12 + 1 * 24, 42, 18),
+    labelConstitution = forms.label(P.form, 'CON', 256 + 52, 12 + 2 * 24, 42, 18),
+    labelIntelligence = forms.label(P.form, 'INT', 256 + 52, 12 + 3 * 24, 42, 18),
+    labelLuck = forms.label(P.form, 'LCK', 256 + 52, 12 + 4 * 24, 42, 18),
+    labelHp = forms.label(P.form, 'HP', 256 + 52, 12 + 5 * 24, 42, 18),
+    labelMp = forms.label(P.form, 'MP', 256 + 52, 12 + 6 * 24, 42, 18),
+    labelHearts = forms.label(P.form, 'Hearts', 256 + 52, 12 + 7 * 24, 42, 18),
+    -- Buttons
+    buttonRollStats = forms.button(P.form, 'Roll stats', P.rollStats, 256, 12 + 8 * 24, 120, 24),
+    buttonApplyStats = forms.button(P.form, 'Apply stats', P.applyStats, 256, 12 + 9 * 24, 120, 24),
+    buttonRegenerateSamples = forms.button(P.form, 'Regenerate samples', P.regenerateSamples, 256, 12 + 10 * 24, 120, 24),
 }
+
 P.selection = {
-    nameCode = P.option.nameCode[1],
-    startingHearts = P.option.startingHearts[1],
-    defeatDraculaTime = P.option.defeatDraculaTime[1],
-    finalHealth = P.option.finalHealth[1],
-    finalHearts = P.option.finalHearts[1],
-    finalSubweapon = P.option.finalSubweapon[1],
+    -- nameCode = P.option.nameCode[1],
+    -- startingHearts = P.option.startingHearts[1],
+    -- defeatDraculaTime = P.option.defeatDraculaTime[1],
+    -- finalHealth = P.option.finalHealth[1],
+    -- finalHearts = P.option.finalHearts[1],
+    -- finalSubweapon = P.option.finalSubweapon[1],
     level = P.option.level[1],
-    lifeMaxUps = P.option.lifeMaxUps[1],
-    heartMaxUps = P.option.heartMaxUps[1],
+    -- lifeMaxUps = P.option.lifeMaxUps[1],
+    -- heartMaxUps = P.option.heartMaxUps[1],
+    -- rolls= P.option.rolls[1],
 }
-local labelText = ''
-labelText = labelText..'STR    = ?\n'
-labelText = labelText..'CON    = ?\n'
-labelText = labelText..'INT    = ?\n'
-labelText = labelText..'LCK    = ?\n'
-labelText = labelText..'HP     = ?\n'
-labelText = labelText..'MP     = ?\n'
-labelText = labelText..'Hearts = ?'
-P.statsLabel = forms.label(P.form, labelText, 256, 8, 150, 100, true)
+P.regenerateSamples()
+P.rollStats()
+
+P.hpIncreases = {1, 3, 6, 10, 20, 30, 40, 50, 100, 200}
+P.xpTargets = {
+         0,    100,    250,    450,    700,   1000,   1350,   1750,   2200,   2700,
+      3250,   3850,   4500,   5200,   5950,   6750,   7600,   8500,   9450,  10450,
+     11700,  13200,  15100,  17500,  20400,  23700,  27200,  30900,  35000,  39500,
+     44500,  50000,  56000,  61500,  68500,  76000,  84000,  92500, 101500, 110000,
+    120000, 130000, 140000, 150000, 160000, 170000, 180000, 190000, 200000, 210000,
+    222000, 234000, 246000, 258000, 270000, 282000, 294000, 306000, 318000, 330000,
+    344000, 358000, 372000, 386000, 400000, 414000, 428000, 442000, 456000, 470000,
+    486000, 502000, 518000, 534000, 550000, 566000, 582000, 598000, 614000, 630000,
+    648000, 666000, 684000, 702000, 720000, 738000, 756000, 774000, 792000, 810000,
+    830000, 850000, 870000, 890000, 910000, 930000, 950000, 970000, 999999,
+}
 
 P.update()
 while true do
