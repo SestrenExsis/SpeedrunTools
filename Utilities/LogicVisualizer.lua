@@ -61,9 +61,6 @@ P.Stage = {
     -- 0 = Marble Gallery
     -- 9 = Abandoned Mine
 
--- 0x0973F0 for x position
--- 0x0973F4 for y position
-
 P.Logic = {
   ['abandonedMine'] = {
     ['bend'] = {
@@ -28478,8 +28475,11 @@ P.room_id = function()
 end
 
 P.draw = function()
-    local scroll_x = mainmemory.read_u16_le(0x07308E)
-    local scroll_y = mainmemory.read_u16_le(0x073092)
+    local playerX = mainmemory.read_u16_le(0x0973F0)
+    local playerY = mainmemory.read_u16_le(0x0973F4)
+    local scrollX = mainmemory.read_u16_le(0x07308E)
+    local scrollY = mainmemory.read_u16_le(0x073092)
+    local regionFound = false
     if P.Stages[P.stage_id()] ~= nil then
         local stageName = P.Stages[P.stage_id()].stageName
         local roomIndex = (P.room_id() - P.Stages[P.stage_id()].roomOffset) / 8
@@ -28489,15 +28489,25 @@ P.draw = function()
             for index, regionInfo in ipairs(roomLogic['regions']) do
                 local requirement = regionInfo['requirements'][1]
                 -- local section = regionInfo['outcome'][1]['section']
-                local left = 15 + requirement['positionX'].minimum - scroll_x
-                local right = 15 + requirement['positionX'].maximum - scroll_x
-                local top = requirement['positionY'].minimum - scroll_y
-                local bottom = 1 + requirement['positionY'].maximum - scroll_y
+                local left = requirement['positionX'].minimum
+                local right =  requirement['positionX'].maximum
+                local top = requirement['positionY'].minimum
+                local bottom = 1 + requirement['positionY'].maximum
                 local color = 0x11ff00ff
                 if index == #regionInfo then
                     color = 0x00000000
+                elseif not regionFound and playerX >= left and playerX < right and playerY >= top and playerY < bottom then
+                    regionFound = true
+                    color = 0x1100ffff
                 end
-                gui.drawBox(left, top, right, bottom, 0xffffffff, color)
+                gui.drawBox(
+                    15 + left - scrollX,
+                    top - scrollY,
+                    15 + right - scrollX,
+                    bottom - scrollY,
+                    0xffffffff,
+                    color
+                )
             end
         end
     end
