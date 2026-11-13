@@ -2,7 +2,6 @@
 local P = {}
 LogicVisualizer = P
 
-
 P.Stage = {
     MARBLE_GALLERY = 0x00,
     OUTER_WALL = 0x01,
@@ -56,10 +55,6 @@ P.Stage = {
 }
 
 -- TODO(sestren): Time room transitions
-
--- stageId = [0x0974A0]
-    -- 0 = Marble Gallery
-    -- 9 = Abandoned Mine
 
 P.Logic = {
   ['abandonedMine'] = {
@@ -28460,8 +28455,72 @@ P.Stages = {
     },
 }
 
-P.update = function()
-    -- ...
+P.getCurrentState = function()
+    local relicSoulOfBat = (mainmemory.read_u8(0x097964) >= 3)
+    local relicSoulOfWolf = (mainmemory.read_u8(0x097968) >= 3)
+    local relicEchoOfBat = (mainmemory.read_u8(0x097966) >= 3)
+    local relicPowerOfWolf = (mainmemory.read_u8(0x097969) >= 3)
+    local relicSkillOfWolf = (mainmemory.read_u8(0x09796A) >= 3)
+    local relicFormOfMist = (mainmemory.read_u8(0x09796B) >= 3)
+    local relicPowerOfMist = (mainmemory.read_u8(0x09796C) >= 3)
+    local relicCubeOfZoe = (mainmemory.read_u8(0x09796E) >= 3)
+    local relicGravityBoots = (mainmemory.read_u8(0x097970) >= 3)
+    local relicLeapStone = (mainmemory.read_u8(0x097971) >= 3)
+    local relicHolySymbol = (mainmemory.read_u8(0x097972) >= 3)
+    local relicJewelOfOpen = (mainmemory.read_u8(0x097974) >= 3)
+    local relicMermanStatue = (mainmemory.read_u8(0x097975) >= 3)
+    local relicDemonCard = (mainmemory.read_u8(0x097979) >= 3)
+    local equippedSpikeBreaker = (mainmemory.read_u8(0x097C0C) == 0x0E)
+    local result = {
+        techniqueSolveBoxPuzzle = true,
+        techniqueLogicalRisks = true,
+        -- techniqueForgivingCandleDiveKick = true,
+    }
+    result.progressionBatTransformation = relicSoulOfBat
+    result.progressionEcholocation = relicEchoOfBat
+    result.progressionFasterWolfRunSpeed = relicPowerOfWolf
+    result.progressionMidAirReset = relicSoulOfBat or relicSoulOfWolf or relicFormOfMist or relicLeapStone
+    result.progressionMistTransformation = relicFormOfMist
+    result.progressionWolfChargeAttack = relicSkillOfWolf
+    result.progressionWolfSwimMovement = relicSkillOfWolf
+    result.progressionWolfTransformation = relicSoulOfWolf
+    result.progressionLongerMistDuration = relicPowerOfMist
+    result.progressionItemMaterialization = relicCubeOfZoe
+    result.progressionGravityJump = relicGravityBoots
+    result.progressionDoubleJump = relicLeapStone
+    result.progressionProtectionFromWater = relicHolySymbol
+    result.progressionUnlockBlueDoors = relicJewelOfOpen
+    result.progressionSummonFerryman = relicMermanStatue
+    result.progressionSummonDemonFamiliar = relicDemonCard -- or relicNosedevilCard
+    -- Status
+    result.statusPassageFromCastleEntranceToUndergroundCavernsOpened = (mainmemory.read_u8(0x03BE1C) & 0x01) > 0
+    result.statusPassageFromCastleEntranceToWarpRoomsOpened = (mainmemory.read_u8(0x03BE1E) & 0x01) > 0
+    result.statusCannonActivated = (mainmemory.read_u8(0x03BE6F) & 0x01) > 0
+    result.statusPressurePlateInMarbleGalleryActivated = (mainmemory.read_u8(0x03BDED) & 0x01) > 0
+    result.statusBarrierInColosseumOpened = (mainmemory.read_u8(0x03BE9D) & 0x01) > 0
+    -- result.statusXXX = (mainmemory.read_u8(0x03BEFF) & 0x01) > 0
+    if P.Stages[P.currentStageId] ~= nil then
+        result.stage = P.Stages[P.currentStageId].stageName
+        local roomIndex = (P.currentRoomId - P.Stages[P.currentStageId].roomOffset) / 8
+        if P.Stages[P.currentStageId].roomNames[roomIndex] ~= nil then
+            local playerX = mainmemory.read_u16_le(0x0973F0)
+            local playerY = mainmemory.read_u16_le(0x0973F4)
+            result.room = P.Stages[P.currentStageId].roomNames[roomIndex]
+            local roomLogic = P.Logic[result.stage][result.room]
+            for regionIndex, regionInfo in ipairs(roomLogic['regions']) do
+                local requirement = regionInfo['requirements'][1]
+                local left = requirement['positionX'].minimum
+                local right =  requirement['positionX'].maximum
+                local top = requirement['positionY'].minimum
+                local bottom = 1 + requirement['positionY'].maximum
+                if playerX >= left and playerX < right and playerY >= top and playerY < bottom then
+                    result.section = regionInfo['outcome']['section']
+                    break
+                end
+            end
+        end
+    end
+    return result
 end
 
 P.stage_id = function()
@@ -28474,52 +28533,114 @@ P.room_id = function()
     return result
 end
 
+P.update = function()
+    P.timers[0] = P.timers[0] + 1
+    local prevStageId = P.currentStageId
+    local prevRoomId = P.currentRoomId
+    P.currentStageId = P.stage_id()
+    P.currentRoomId = P.room_id()
+    if P.currentStageId ~= prevStageId or P.currentRoomId ~= prevRoomId then
+        P.timers[1] = P.timers[0]
+        P.timers[0] = 0
+    end
+    P.currentState = P.getCurrentState()
+end
+
 P.draw = function()
     local playerX = mainmemory.read_u16_le(0x0973F0)
     local playerY = mainmemory.read_u16_le(0x0973F4)
     local scrollX = mainmemory.read_u16_le(0x07308E)
     local scrollY = mainmemory.read_u16_le(0x073092)
-    local regionFound = false
-    if P.Stages[P.stage_id()] ~= nil then
-        local stageName = P.Stages[P.stage_id()].stageName
-        local roomIndex = (P.room_id() - P.Stages[P.stage_id()].roomOffset) / 8
-        if P.Stages[P.stage_id()].roomNames[roomIndex] ~= nil then
-            local roomName = P.Stages[P.stage_id()].roomNames[roomIndex]
-            local roomLogic = P.Logic[stageName][roomName]
-            for index, regionInfo in ipairs(roomLogic['regions']) do
-                local requirement = regionInfo['requirements'][1]
-                -- local section = regionInfo['outcome'][1]['section']
-                local left = requirement['positionX'].minimum
-                local right =  requirement['positionX'].maximum
-                local top = requirement['positionY'].minimum
-                local bottom = 1 + requirement['positionY'].maximum
-                local color = 0x11ff00ff
-                if index == #regionInfo then
-                    color = 0x00000000
-                elseif not regionFound and playerX >= left and playerX < right and playerY >= top and playerY < bottom then
-                    regionFound = true
-                    color = 0x1100ffff
+    local centerX = playerX - scrollX + 12
+    local centerY = playerY - scrollY - 2
+    gui.drawEllipse(centerX, centerY, 4, 4, 0xffffffff)
+    if P.Logic[P.currentState.stage] ~= nil and P.Logic[P.currentState.stage][P.currentState.room] ~= nil then
+        local roomLogic = P.Logic[P.currentState.stage][P.currentState.room]
+        for regionIndex, regionInfo in ipairs(roomLogic['regions']) do
+            local requirement = regionInfo['requirements'][1]
+            local left = requirement['positionX'].minimum
+            local right =  requirement['positionX'].maximum
+            local top = requirement['positionY'].minimum
+            local bottom = 1 + requirement['positionY'].maximum
+            local color = 0x0cff0000
+            if regionInfo['outcome']['section'] == P.currentState.section then
+                color = 0x0c00ff00
+                for commandName, commandInfo in pairs(roomLogic['commands']) do
+                    if (
+                        commandInfo['outcome'].positionX ~= nil and
+                        commandInfo['outcome'].positionY ~= nil
+                    ) then
+                        local inSection = false
+                        local metRequirements = false
+                        for requirementIndex, requirementInfo in ipairs(commandInfo['requirements']) do
+                            metRequirements = true
+                            for progressionName, progressionInfo in pairs(requirementInfo) do
+                                if progressionName == 'costs' then
+                                    -- SKIP
+                                elseif progressionName == 'section' then
+                                    if P.currentState[progressionName] == progressionInfo then
+                                        inSection = true
+                                    else
+                                        metRequirements = false
+                                    end
+                                elseif P.currentState[progressionName] ~= nil then
+                                    if P.currentState[progressionName] ~= progressionInfo then
+                                        metRequirements = false
+                                    end
+                                else
+                                    metRequirements = false
+                                end
+                            end
+                            if metRequirements then
+                                -- console.log(requirementIndex, requirementInfo)
+                                break
+                            end
+                        end
+                        if inSection then
+                            local lineColor = 0x20ff0000
+                            if metRequirements then
+                                lineColor = 0x8000ff00
+                            end
+                            local targetX = commandInfo['outcome'].positionX - scrollX + 12
+                            local targetY = commandInfo['outcome'].positionY - scrollY - 2
+                            gui.drawLine(centerX, centerY, targetX, targetY, lineColor)
+                            if not metRequirements then
+                                local textX = (8 * centerX + targetX) / 9
+                                local textY = (8 * centerY + targetY) / 9
+                                gui.drawText(textX, textY, commandName, 0xffffffff, 0x80000000, 8)
+                            end
+                        end
+                    end
                 end
-                gui.drawBox(
-                    15 + left - scrollX,
-                    top - scrollY,
-                    15 + right - scrollX,
-                    bottom - scrollY,
-                    0xffffffff,
-                    color
-                )
             end
+            gui.drawBox(
+                15 + left - scrollX,
+                top - scrollY,
+                15 + right - scrollX,
+                bottom - scrollY,
+                0xffffffff,
+                color
+            )
         end
     end
+    local formLabelText = string.format('t = %.2f', P.timers[0] / 60)..'\n'..string.format('t = %.2f', P.timers[1] / 60)
+    forms.settext(P.formLabel, formLabelText)
 end
 
 event.unregisterbyname("LogicVisualizer__update")
 event.onframeend(P.update, "LogicVisualizer__update")
 
 P.form = forms.newform(340, 110, "LogicVisualizer", nil)
+P.formLabel = forms.label(P.form, '-', 8, 8, 240, 180, true)
+P.timers = {
+    [0] = 0,
+    [1] = 0,
+}
+P.currentState = P.getCurrentState()
 
 P.update()
 while true do
     emu.yield()
     P.draw()
+    -- break
 end
