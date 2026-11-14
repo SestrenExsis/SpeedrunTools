@@ -28456,6 +28456,19 @@ P.Stages = {
 }
 
 P.getCurrentState = function()
+    local result = {
+        techniqueForgivingCandleDiveKick = forms.ischecked(P.techniqueForgivingCandleDiveKick),
+        techniqueLogicalRisks = forms.ischecked(P.techniqueLogicalRisks),
+        techniqueSolveBoxPuzzle = forms.ischecked(P.techniqueSolveBoxPuzzle),
+        techniqueSolveRedSkeletonLiftPuzzle = forms.ischecked(P.techniqueSolveRedSkeletonLiftPuzzle),
+        -- techniquePreciseJump
+        -- techniqueWolfMistRise
+        -- techniqueLongWolfMistRise
+        -- techniqueVeryLongWolfMistRise
+        -- techniqueLongPoweredMistTravel
+        -- techniquePreciseCornerMist
+        -- techniqueDefeatSuccubusAtZeroProgression
+    }
     local relicSoulOfBat = (mainmemory.read_u8(0x097964) >= 3)
     local relicSoulOfWolf = (mainmemory.read_u8(0x097968) >= 3)
     local relicEchoOfBat = (mainmemory.read_u8(0x097966) >= 3)
@@ -28471,33 +28484,48 @@ P.getCurrentState = function()
     local relicMermanStatue = (mainmemory.read_u8(0x097975) >= 3)
     local relicDemonCard = (mainmemory.read_u8(0x097979) >= 3)
     local equippedSpikeBreaker = (mainmemory.read_u8(0x097C0C) == 0x0E)
-    local result = {
-        techniqueSolveBoxPuzzle = true,
-        techniqueLogicalRisks = true,
-        -- techniqueForgivingCandleDiveKick = true,
-    }
+    -- Progression
+    result.equippedSpikeBreaker = equippedSpikeBreaker
     result.progressionBatTransformation = relicSoulOfBat
+    result.progressionDoubleJump = relicLeapStone
     result.progressionEcholocation = relicEchoOfBat
     result.progressionFasterWolfRunSpeed = relicPowerOfWolf
+    result.progressionGravityJump = relicGravityBoots
+    result.progressionItemMaterialization = relicCubeOfZoe
+    result.progressionLongerMistDuration = relicPowerOfMist
     result.progressionMidAirReset = relicSoulOfBat or relicSoulOfWolf or relicFormOfMist or relicLeapStone
     result.progressionMistTransformation = relicFormOfMist
+    result.progressionProtectionFromWater = relicHolySymbol
+    result.progressionSummonDemonFamiliar = relicDemonCard -- or relicNosedevilCard
+    result.progressionSummonFerryman = relicMermanStatue
+    result.progressionUnlockBlueDoors = relicJewelOfOpen
     result.progressionWolfChargeAttack = relicSkillOfWolf
     result.progressionWolfSwimMovement = relicSkillOfWolf
     result.progressionWolfTransformation = relicSoulOfWolf
-    result.progressionLongerMistDuration = relicPowerOfMist
-    result.progressionItemMaterialization = relicCubeOfZoe
-    result.progressionGravityJump = relicGravityBoots
-    result.progressionDoubleJump = relicLeapStone
-    result.progressionProtectionFromWater = relicHolySymbol
-    result.progressionUnlockBlueDoors = relicJewelOfOpen
-    result.progressionSummonFerryman = relicMermanStatue
-    result.progressionSummonDemonFamiliar = relicDemonCard -- or relicNosedevilCard
-    -- Status
+    -- Statuses
+    result.statusBarrierInColosseumOpened = (mainmemory.read_u8(0x03BE9D) & 0x01) > 0
+    result.statusBridgeInUndergroundCavernsBroken = false
+    result.statusButtonInUndergroundCavernsActivated = false
+    result.statusCannonActivated = (mainmemory.read_u8(0x03BE6F) & 0x01) > 0
+    result.statusDemonSwitchActivated = false
+    result.statusLightInSpikeMazeActivated = (mainmemory.read_u8(0x03BE2E) & 0x01) > 0
+    result.statusMetDeathInCastleEntrance = false
+    result.statusPassageFromCastleEntranceToMarbleGalleryOpened = false
     result.statusPassageFromCastleEntranceToUndergroundCavernsOpened = (mainmemory.read_u8(0x03BE1C) & 0x01) > 0
     result.statusPassageFromCastleEntranceToWarpRoomsOpened = (mainmemory.read_u8(0x03BE1E) & 0x01) > 0
-    result.statusCannonActivated = (mainmemory.read_u8(0x03BE6F) & 0x01) > 0
     result.statusPressurePlateInMarbleGalleryActivated = (mainmemory.read_u8(0x03BDED) & 0x01) > 0
-    result.statusBarrierInColosseumOpened = (mainmemory.read_u8(0x03BE9D) & 0x01) > 0
+    result.statusRichterSaved = false
+    result.statusSecretFloorInClockRoomOpened = false
+    result.statusSecretPlatformInOuterWallActivated = false
+    result.statusSecretWallInMermanRoomOpened = false
+    result.statusStairwellInAbandonedMineDislodged = false
+    result.statusStatueInRoyalChapelMoved = false
+    result.statusSuccubusDefeated = false
+    result.statusTrapdoorAfterDrawbridgeOpened = false
+    result.statusWarpRoomToAbandonedMineUnlocked = false
+    result.statusWarpRoomToCastleKeepUnlocked = false
+    result.statusWarpRoomToOlroxsQuartersUnlocked = false
+    result.statusWarpRoomToOuterWallUnlocked = false
     -- result.statusXXX = (mainmemory.read_u8(0x03BEFF) & 0x01) > 0
     if P.Stages[P.currentStageId] ~= nil then
         result.stage = P.Stages[P.currentStageId].stageName
@@ -28577,6 +28605,12 @@ P.draw = function()
                             for progressionName, progressionInfo in pairs(requirementInfo) do
                                 if progressionName == 'costs' then
                                     -- SKIP
+                                elseif progressionName == 'itemSpikeBreaker' then
+                                    if P.currentState['equippedSpikeBreaker'] == true then
+                                        -- ...
+                                    else
+                                        metRequirements = false
+                                    end
                                 elseif progressionName == 'section' then
                                     if P.currentState[progressionName] == progressionInfo then
                                         inSection = true
@@ -28631,7 +28665,11 @@ event.unregisterbyname("LogicVisualizer__update")
 event.onframeend(P.update, "LogicVisualizer__update")
 
 P.form = forms.newform(340, 110, "LogicVisualizer", nil)
-P.formLabel = forms.label(P.form, '-', 8, 8, 240, 180, true)
+P.formLabel = forms.label(P.form, '-', 128, 8, 240, 180, true)
+P.techniqueLogicalRisks = forms.checkbox(P.form, 'Logical Risks', 8, 8)
+P.techniqueForgivingCandleDiveKick = forms.checkbox(P.form, 'Candle Bounce', 8, 24)
+P.techniqueSolveBoxPuzzle = forms.checkbox(P.form, 'Box Puzzle', 8, 40)
+P.techniqueSolveRedSkeletonLiftPuzzle = forms.checkbox(P.form, 'Lift Puzzle', 8, 56)
 P.timers = {
     [0] = 0,
     [1] = 0,
