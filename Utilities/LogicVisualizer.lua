@@ -470,6 +470,7 @@ P.Logic = {
           ['outcome'] = {
             positionX = 216,
             positionY = 256,
+            statusStairwellInAbandonedMineDislodged = true,
           },
           requirements = {
             {
@@ -570,6 +571,14 @@ P.Logic = {
               progressionWolfTransformation = true,
               progressionMistTransformation = true,
               techniqueWolfMistRise = true,
+            },
+            {
+              section = "crumblingStairwell",
+              progressionDoubleJump = true,
+              statusStairwellInAbandonedMineDislodged = true,
+              ['costs'] = {
+                time = 2,
+              },
             },
           },
         },
@@ -577,7 +586,6 @@ P.Logic = {
           ['outcome'] = {
             positionX = 96,
             positionY = 656,
-            statusStairwellInAbandonedMineDislodged = true,
           },
           requirements = {
             {
@@ -671,14 +679,6 @@ P.Logic = {
               progressionWolfTransformation = true,
               progressionMistTransformation = true,
               techniqueWolfMistRise = true,
-            },
-            {
-              section = "tinyLedges",
-              progressionDoubleJump = true,
-              statusStairwellInAbandonedMineDislodged = true,
-              ['costs'] = {
-                time = 2,
-              },
             },
           },
         },
@@ -13295,7 +13295,7 @@ P.Logic = {
         ['exitLeftLower'] = {
           ['outcome'] = {
             positionX = -8,
-            positionY = 128,
+            positionY = 384,
           },
           requirements = {
             {
