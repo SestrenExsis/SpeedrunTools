@@ -28469,6 +28469,29 @@ P.getCurrentState = function()
         -- techniquePreciseCornerMist
         -- techniqueDefeatSuccubusAtZeroProgression
     }
+    -- Stage, Room, and Section
+    if P.Stages[P.currentStageId] ~= nil then
+        result.stage = P.Stages[P.currentStageId].stageName
+        local roomIndex = (P.currentRoomId - P.Stages[P.currentStageId].roomOffset) / 8
+        if P.Stages[P.currentStageId].roomNames[roomIndex] ~= nil then
+            local playerX = mainmemory.read_u16_le(0x0973F0)
+            local playerY = mainmemory.read_u16_le(0x0973F4)
+            result.room = P.Stages[P.currentStageId].roomNames[roomIndex]
+            local roomLogic = P.Logic[result.stage][result.room]
+            for regionIndex, regionInfo in ipairs(roomLogic['regions']) do
+                local requirement = regionInfo['requirements'][1]
+                local left = requirement['positionX'].minimum
+                local right =  requirement['positionX'].maximum
+                local top = requirement['positionY'].minimum
+                local bottom = 1 + requirement['positionY'].maximum
+                if playerX >= left and playerX < right and playerY >= top and playerY < bottom then
+                    result.section = regionInfo['outcome']['section']
+                    break
+                end
+            end
+        end
+    end
+    -- Relics and Items
     local relicSoulOfBat = (mainmemory.read_u8(0x097964) >= 3)
     local relicSoulOfWolf = (mainmemory.read_u8(0x097968) >= 3)
     local relicEchoOfBat = (mainmemory.read_u8(0x097966) >= 3)
@@ -28503,51 +28526,31 @@ P.getCurrentState = function()
     result.progressionWolfSwimMovement = relicSkillOfWolf
     result.progressionWolfTransformation = relicSoulOfWolf
     -- Statuses
+    -- 0x03BDEC + CASTLE_FLAG_INDEX
     result.statusBarrierInColosseumOpened = (mainmemory.read_u8(0x03BE9D) & 0x01) > 0
-    result.statusBridgeInUndergroundCavernsBroken = false
-    result.statusButtonInUndergroundCavernsActivated = false
+    result.statusBridgeInUndergroundCavernsBroken = (mainmemory.read_u8(0x03BEB3) & 0x01) > 0
+    result.statusButtonInUndergroundCavernsActivated = (mainmemory.read_u8(0x03BEB3) & 0x01) > 0
     result.statusCannonActivated = (mainmemory.read_u8(0x03BE6F) & 0x01) > 0
-    result.statusDemonSwitchActivated = false
+    result.statusDemonSwitchActivated = (mainmemory.read_u8(0x03BE3C) & 0x01) > 0
     result.statusLightInSpikeMazeActivated = (mainmemory.read_u8(0x03BE2E) & 0x01) > 0
-    result.statusMetDeathInCastleEntrance = false
-    result.statusPassageFromCastleEntranceToMarbleGalleryOpened = false
+    -- result.statusMetDeathInCastleEntrance = false
+    result.statusPassageFromCastleEntranceToMarbleGalleryOpened = (mainmemory.read_u8(0x03BE1D) & 0x01) > 0
     result.statusPassageFromCastleEntranceToUndergroundCavernsOpened = (mainmemory.read_u8(0x03BE1C) & 0x01) > 0
     result.statusPassageFromCastleEntranceToWarpRoomsOpened = (mainmemory.read_u8(0x03BE1E) & 0x01) > 0
     result.statusPressurePlateInMarbleGalleryActivated = (mainmemory.read_u8(0x03BDED) & 0x01) > 0
-    result.statusRichterSaved = false
-    result.statusSecretFloorInClockRoomOpened = false
-    result.statusSecretPlatformInOuterWallActivated = false
-    result.statusSecretWallInMermanRoomOpened = false
-    result.statusStairwellInAbandonedMineDislodged = false
-    result.statusStatueInRoyalChapelMoved = false
-    result.statusSuccubusDefeated = false
-    result.statusTrapdoorAfterDrawbridgeOpened = false
-    result.statusWarpRoomToAbandonedMineUnlocked = false
-    result.statusWarpRoomToCastleKeepUnlocked = false
-    result.statusWarpRoomToOlroxsQuartersUnlocked = false
-    result.statusWarpRoomToOuterWallUnlocked = false
+    -- result.statusRichterSaved = false
+    -- result.statusSecretFloorInClockRoomOpened = false
+    result.statusSecretPlatformInOuterWallActivated = (result.stage == 'outerWall') and (mainmemory.read_u8(0x181664) & 0x01) > 0
+    result.statusSecretWallInMermanRoomOpened = (mainmemory.read_u8(0x03BE26) & 0x01) > 0
+    result.statusStairwellInAbandonedMineDislodged = (mainmemory.read_u8(0x03BE3E) & 0x01) > 0
+    result.statusStatueInRoyalChapelMoved = (mainmemory.read_u8(0x03BE4C) & 0x01) > 0
+    -- result.statusSuccubusDefeated = false
+    -- result.statusTrapdoorAfterDrawbridgeOpened = false
+    result.statusWarpRoomToAbandonedMineUnlocked = (mainmemory.read_u8(0x03BEBC) & 0x02) > 0
+    result.statusWarpRoomToCastleKeepUnlocked = (mainmemory.read_u8(0x03BEBC) & 0x08) > 0
+    result.statusWarpRoomToOlroxsQuartersUnlocked = (mainmemory.read_u8(0x03BEBC) & 0x10) > 0
+    result.statusWarpRoomToOuterWallUnlocked = (mainmemory.read_u8(0x03BEBC) & 0x04) > 0
     -- result.statusXXX = (mainmemory.read_u8(0x03BEFF) & 0x01) > 0
-    if P.Stages[P.currentStageId] ~= nil then
-        result.stage = P.Stages[P.currentStageId].stageName
-        local roomIndex = (P.currentRoomId - P.Stages[P.currentStageId].roomOffset) / 8
-        if P.Stages[P.currentStageId].roomNames[roomIndex] ~= nil then
-            local playerX = mainmemory.read_u16_le(0x0973F0)
-            local playerY = mainmemory.read_u16_le(0x0973F4)
-            result.room = P.Stages[P.currentStageId].roomNames[roomIndex]
-            local roomLogic = P.Logic[result.stage][result.room]
-            for regionIndex, regionInfo in ipairs(roomLogic['regions']) do
-                local requirement = regionInfo['requirements'][1]
-                local left = requirement['positionX'].minimum
-                local right =  requirement['positionX'].maximum
-                local top = requirement['positionY'].minimum
-                local bottom = 1 + requirement['positionY'].maximum
-                if playerX >= left and playerX < right and playerY >= top and playerY < bottom then
-                    result.section = regionInfo['outcome']['section']
-                    break
-                end
-            end
-        end
-    end
     return result
 end
 
